@@ -7,7 +7,7 @@ build = "build.rs"
 license = "MIT"
 
 [lib]
-crate-type = ["dylib"]
+crate-type = ["rlib"]
 
 [dependencies]
 bitflags = "1.0"
