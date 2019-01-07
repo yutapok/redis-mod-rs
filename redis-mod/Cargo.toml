@@ -1,12 +1,10 @@
 [package]
-name = "redis-mod"
+name = "redis_mod"
 version = "0.0.1"
 authors = ["utsugi yuta <yutautsugi@outlook.com>"]
 edition = "2018"
 build = "build.rs"
-description = "yaho"
 license = "MIT"
-repository = "https://github.com/brandur/redis-cell"
 
 [lib]
 crate-type = ["dylib"]
