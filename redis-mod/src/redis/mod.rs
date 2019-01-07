@@ -172,6 +172,10 @@ impl Redis {
         )
     }
 
+    pub fn reply_null(&self) -> raw::Status {
+        raw::reply_with_null(self.ctx)
+    }
+
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]

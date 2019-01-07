@@ -143,6 +143,13 @@ pub fn reply_with_string(
     unsafe { RedisModule_ReplyWithString(ctx, str) }
 }
 
+pub fn reply_with_null(
+    ctx: *mut RedisModuleCtx
+) -> Status {
+    unsafe { RedisModule_ReplyWithNull(ctx) }
+}
+
+
 pub fn free_string(ctx: *mut RedisModuleCtx, str: *mut RedisModuleString) {
     unsafe { RedisModule_FreeString(ctx, str) }
 }
@@ -237,6 +244,11 @@ extern "C" {
         extern "C" fn(
             ctx: *mut RedisModuleCtx, 
             str: *mut RedisModuleString
+    ) -> Status;
+
+    static RedisModule_ReplyWithNull:
+        extern "C" fn(
+            ctx: *mut RedisModuleCtx
     ) -> Status;
 
     static RedisModule_CreateString:
