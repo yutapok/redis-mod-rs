@@ -1,3 +1,4 @@
+#[macro_export]
 macro_rules! error {
     ($message:expr) => {
         RModError::generic($message)
