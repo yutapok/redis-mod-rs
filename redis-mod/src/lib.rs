@@ -10,27 +10,28 @@ pub mod error;
 mod redis;
 
 use std::str;
-use redis::Command;
-use redis::raw;
+use crate::redis::Command;
+use crate::redis::raw;
+use crate::error::RModError;
 use libc::c_int;
 
 
-const MODULE_NAME: &str = "rmod-rs-sample";
+const MODULE_NAME: &str = "rmod-diffsync-rs";
 const MODULE_VERSION: c_int = 1;
 
-pub struct ZstdGetCommand {}
+pub struct DiffSyncDeqCommand {}
 
-impl Command for ZstdGetCommand {
+impl Command for DiffSyncDeqCommand {
     // Should return the name of the command to be registered.
     fn name(&self) -> &'static str {
-        "zstd.zget"
+        "diffsync.deq"
     }
 
     // Run the command.
     fn run(&self, r: redis::Redis, args: &[&str]) -> Result<(), RModError> {
         if args.len() != 2 {
             return Err(error!(
-                "Usage: {} <key> <period> [<quantity>]",
+                "Usage: {} <key> <accoutid>",
                 self.name()
             ));
         }
@@ -46,27 +47,30 @@ impl Command for ZstdGetCommand {
     }
 }
 
-pub struct ZstdSetCommand {}
-impl Command for ZstdSetCommand {
+pub struct DiffSyncEnqCommand {}
+impl Command for DiffSyncEnqCommand {
     // Should return the name of the command to be registered.
     fn name(&self) -> &'static str {
-        "zstd.zset"
+        "diffsync.enq"
     }
 
     // Run the command.
     fn run(&self, r: redis::Redis, args: &[&str]) -> Result<(), RModError> {
         if args.len() != 3 {
             return Err(error!(
-                "Usage: {} <key> <period> [<quantity>]",
+                "Usage: {} <key> init:<unix> upd:<unix>",
                 self.name()
             ));
         }
 
         let key = args[1];
-        let val = args[2];
+        let init_unix = args[2];
+        let upd_unix = args[3];
+
+        let val = format!("{}, {}", init_unix, upd_unix);
 
         r.open_key_writable(key).write(&val).unwrap();
-        r.reply_string(&val);
+        r.reply_string("ok");
 
         Ok(())
     }
@@ -79,23 +83,23 @@ impl Command for ZstdSetCommand {
 #[allow(non_snake_case)]
 #[allow(unused_variables)]
 #[no_mangle]
-pub extern "C" fn ZstdGet_RedisCommand(
+pub extern "C" fn DiffSyncDeq_RedisCommand(
     ctx: *mut raw::RedisModuleCtx,
     argv: *mut *mut raw::RedisModuleString,
     argc: c_int,
 ) -> raw::Status {
-    Command::harness(&ZstdGetCommand {}, ctx, argv, argc)
+    Command::harness(&DiffSyncDeqCommand {}, ctx, argv, argc)
 }
 
 #[allow(non_snake_case)]
 #[allow(unused_variables)]
 #[no_mangle]
-pub extern "C" fn ZstdSet_RedisCommand(
+pub extern "C" fn DiffSyncEnq_RedisCommand(
     ctx: *mut raw::RedisModuleCtx,
     argv: *mut *mut raw::RedisModuleString,
     argc: c_int,
 ) -> raw::Status {
-    Command::harness(&ZstdSetCommand {}, ctx, argv, argc)
+    Command::harness(&DiffSyncEnqCommand {}, ctx, argv, argc)
 }
 
 #[allow(non_snake_case)]
@@ -116,12 +120,12 @@ pub extern "C" fn RedisModule_OnLoad(
         return raw::Status::Err;
     }
 
-    let get_command = ZstdGetCommand {};
-    let set_command = ZstdSetCommand {};
+    let get_command = DiffSyncDeqCommand {};
+    let set_command = DiffSyncEnqCommand {};
     if raw::create_command(
         ctx,
         format!("{}\0", get_command.name()).as_ptr(),
-        Some(ZstdGet_RedisCommand),
+        Some(DiffSyncDeq_RedisCommand),
         format!("{}\0", get_command.str_flags()).as_ptr(),
         0,
         0,
@@ -134,7 +138,7 @@ pub extern "C" fn RedisModule_OnLoad(
     if raw::create_command(
         ctx,
         format!("{}\0", set_command.name()).as_ptr(),
-        Some(ZstdSet_RedisCommand),
+        Some(DiffSyncEnq_RedisCommand),
         format!("{}\0", set_command.str_flags()).as_ptr(),
         0,
         0,

@@ -7,7 +7,8 @@
            allow(redundant_field_names, suspicious_arithmetic_impl))]
 pub mod raw;
 
-use error::RModError;
+use std::error::Error;
+use crate::error::RModError;
 use libc::{c_int, c_long, c_longlong, size_t};
 use std::ptr;
 use std::string;
@@ -170,6 +171,7 @@ impl Redis {
             "Could not reply with string",
         )
     }
+
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
