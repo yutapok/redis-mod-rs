@@ -7,5 +7,6 @@ extern crate time;
 pub mod macros;
 
 pub mod redis;
+pub use crate::redis::{raw, Command};
 pub mod error;
-
+pub use crate::error::RModError;
