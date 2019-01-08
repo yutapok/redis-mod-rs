@@ -172,10 +172,20 @@ impl Redis {
         )
     }
 
-    pub fn reply_null(&self) -> raw::Status {
-        raw::reply_with_null(self.ctx)
+    pub fn reply_null(&self) -> Result<(), RModError> {
+        handle_status( 
+            raw::reply_with_null(self.ctx),
+            "Could not reply with null",
+        )
     }
 
+    pub fn reply_str_or_null(&self, opt: Option<&str>) -> Result<(), RModError>{
+        match opt {
+            Some(str) => self.reply_string(str),
+            None => self.reply_null(),
+        }
+    }
+ 
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
