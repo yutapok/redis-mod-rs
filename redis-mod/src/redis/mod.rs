@@ -316,6 +316,13 @@ impl RedisKeyWritable {
             raw::Status::Err => Err(error!("Error while setting key")),
         }
     }
+
+    pub fn erace(&self) -> Result<(), RModError> {
+        match raw::delete_key(self.key_inner){
+            raw::Status::Ok => Ok(()),
+            raw::Status::Err => Err(error!("Error while eracing key"))
+        }
+    }
 }
 
 impl Drop for RedisKeyWritable {
