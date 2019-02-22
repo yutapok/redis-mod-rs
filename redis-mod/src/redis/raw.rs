@@ -278,5 +278,9 @@ extern "C" {
     static RedisModule_StringPtrLen:
         extern "C" fn(str: *mut RedisModuleString, len: *mut size_t) -> *const u8;
 
+    static RedisModule_ZsetAdd:
+        extern "C" fn(key: *mut RedisModuleKey, c_double: score, ele: *mut RedisModuleString, *const i32);
+
+
 
 }
