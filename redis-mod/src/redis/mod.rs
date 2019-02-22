@@ -172,6 +172,27 @@ impl Redis {
         )
     }
 
+    pub fn reply_with_simple_string(&self, str: &str) -> Result<(), RModError> {
+        let msg = str.as_ptr();
+        handle_status(
+            raw::reply_with_simple_string(self.ctx, msg),
+            "Could not reply with simple string",
+        )
+    }
+
+    pub fn reply_ok(&self){
+        self.reply_with_simple_string("Ok").unwrap_or(());
+    }
+
+    pub fn reply_null(&self) {
+        raw::reply_with_null(self.ctx);
+    }
+
+    pub fn reply_null_with_ok(&self, msg: &str) -> Result<(), RModError>{
+        self.log(LogLevel::Warning, msg);
+        Ok(self.reply_null())
+    }
+ 
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -293,6 +314,13 @@ impl RedisKeyWritable {
         match raw::string_set(self.key_inner, val_str.str_inner) {
             raw::Status::Ok => Ok(()),
             raw::Status::Err => Err(error!("Error while setting key")),
+        }
+    }
+
+    pub fn erace(&self) -> Result<(), RModError> {
+        match raw::delete_key(self.key_inner){
+            raw::Status::Ok => Ok(()),
+            raw::Status::Err => Err(error!("Error while eracing key"))
         }
     }
 }
