@@ -324,14 +324,40 @@ impl RedisKeyWritable {
         }
     }
 
-    pub fn lpush(&self, ele: &str) -> Result<(), RModError> {
+    pub fn rpush(&self, ele: &str) -> Result<(), RModError> {
         let ele_str = RedisString::create(self.ctx, ele);
         let place: c_int = -1;
+        match raw::list_push(self.key_inner,place,ele_str.str_inner) {
+            raw::Status::Ok => Ok(()),
+            raw::Status::Err => Err(error!("Error while rpush to key, tried to the wrong type"))
+        }
+    }
+
+    pub fn lpush(&self, ele: &str) -> Result<(), RModError> {
+        let ele_str = RedisString::create(self.ctx, ele);
+        let place: c_int = 0;
         match raw::list_push(self.key_inner,place,ele_str.str_inner) {
             raw::Status::Ok => Ok(()),
             raw::Status::Err => Err(error!("Error while lpush to key, tried to the wrong type"))
         }
     }
+
+    pub fn rpop(&self) -> Result<Option<String>, RModError> {
+        let place: c_int = -1;
+        let redis_str = raw::list_pop(self.key_inner,place);
+        match manifest_redis_string(redis_str){
+            Ok(re_str) => Ok(Some(re_str)),
+            Err(_) => Err(error!("Error while rpop to key, tried to the wrong type"))
+        }
+    }
+
+    //pub fn lpop(&self, ele: &str) -> Result<(), RModError> {
+    //    let place: c_int = 0;
+    //    match raw::list_pop(self.key_inner,place) {
+    //        raw::Status::Ok => Ok(()),
+    //        raw::Status::Err => Err(error!("Error while lpop to key, tried to the wrong type"))
+    //    }
+    //}
 }
 
 impl Drop for RedisKeyWritable {

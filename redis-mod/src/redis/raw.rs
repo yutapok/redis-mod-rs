@@ -183,7 +183,7 @@ pub fn list_push(key: *mut RedisModuleKey, place: c_int, ele: *mut RedisModuleSt
     unsafe { RedisModule_ListPush(key, place, ele) }
 }
 
-pub fn list_pop(key: *mut RedisModuleKey, place: c_int) -> RedisModuleString {
+pub fn list_pop(key: *mut RedisModuleKey, place: c_int) -> *mut RedisModuleString {
     unsafe { RedisModule_ListPop(key, place) }
 }
 
@@ -303,7 +303,7 @@ extern "C" {
         extern "C" fn(key: *mut RedisModuleKey, place: c_int, ele: *mut RedisModuleString) -> Status;
 
     static RedisModule_ListPop:
-        extern "C" fn(key: *mut RedisModuleKey, place: c_int) -> RedisModuleString;
+        extern "C" fn(key: *mut RedisModuleKey, place: c_int) -> *mut RedisModuleString;
 
     static RedisModule_ZsetAdd:
         extern "C" fn(key: *mut RedisModuleKey, score: c_double, ele: *mut RedisModuleString, flagsptr: *const i8) -> Status;
