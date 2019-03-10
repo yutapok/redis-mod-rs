@@ -323,6 +323,14 @@ impl RedisKeyWritable {
             raw::Status::Err => Err(error!("Error while eracing key"))
         }
     }
+
+    pub fn lpush(&self) -> Result<(), RModError> {
+        let place: c_int = 0;
+        match raw::list_push(self.key_inner,place) {
+            raw::Status::Ok => Ok(()),
+            raw::Status::Err => Err(error!("Error while lpush to key, tried to the wrong type"))
+        }
+    }
 }
 
 impl Drop for RedisKeyWritable {

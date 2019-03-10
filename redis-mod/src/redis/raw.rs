@@ -179,7 +179,7 @@ pub fn string_ptr_len(str: *mut RedisModuleString, len: *mut size_t) -> *const u
     unsafe { RedisModule_StringPtrLen(str, len) }
 }
 
-pub fn list_push(key: *mut RedisModuleKey, place: c_int) -> c_int {
+pub fn list_push(key: *mut RedisModuleKey, place: c_int) -> Status {
     unsafe { RedisModule_ListPush(key, place) }
 }
 
@@ -187,15 +187,15 @@ pub fn list_pop(key: *mut RedisModuleKey, place: c_int) -> RedisModuleString {
     unsafe { RedisModule_ListPop(key, place) }
 }
 
-pub fn zset_add(key: *mut RedisModuleKey, score: c_double, ele: *mut RedisModuleString, flagsptr: *const i8) -> c_int {
+pub fn zset_add(key: *mut RedisModuleKey, score: c_double, ele: *mut RedisModuleString, flagsptr: *const i8) -> Status {
     unsafe { RedisModule_ZsetAdd(key, score, ele, flagsptr) }
 }
 
-pub fn zset_incrby(key: *mut RedisModuleKey, score: c_double, ele: *mut RedisModuleString, flagsptr: *const i8, newscore: *const f64) -> c_int {
+pub fn zset_incrby(key: *mut RedisModuleKey, score: c_double, ele: *mut RedisModuleString, flagsptr: *const i8, newscore: *const f64) -> Status {
     unsafe { RedisModule_ZsetIncrby(key, score, ele, flagsptr, newscore) }
 }
 
-pub fn zset_score(key: *mut RedisModuleKey, ele: *mut RedisModuleString, score: *const f64) -> c_int {
+pub fn zset_score(key: *mut RedisModuleKey, ele: *mut RedisModuleString, score: *const f64) -> Status {
     unsafe { RedisModule_ZsetScore(key, ele, score) }
 }
 
@@ -300,19 +300,19 @@ extern "C" {
         extern "C" fn(str: *mut RedisModuleString, len: *mut size_t) -> *const u8;
 
     static RedisModule_ListPush:
-        extern "C" fn(key: *mut RedisModuleKey, place: c_int) -> c_int;
+        extern "C" fn(key: *mut RedisModuleKey, place: c_int) -> Status;
 
     static RedisModule_ListPop:
         extern "C" fn(key: *mut RedisModuleKey, place: c_int) -> RedisModuleString;
 
     static RedisModule_ZsetAdd:
-        extern "C" fn(key: *mut RedisModuleKey, score: c_double, ele: *mut RedisModuleString, flagsptr: *const i8) -> c_int;
+        extern "C" fn(key: *mut RedisModuleKey, score: c_double, ele: *mut RedisModuleString, flagsptr: *const i8) -> Status;
 
     static RedisModule_ZsetIncrby:
-        extern "C" fn(key: *mut RedisModuleKey, score: c_double, ele: *mut RedisModuleString, flagsptr: *const i8, newscore: *const f64) -> c_int;
+        extern "C" fn(key: *mut RedisModuleKey, score: c_double, ele: *mut RedisModuleString, flagsptr: *const i8, newscore: *const f64) -> Status;
 
     static RedisModule_ZsetScore:
-        extern "C" fn(key: *mut RedisModuleKey, ele: *mut RedisModuleString, score: *const f64) -> c_int;
+        extern "C" fn(key: *mut RedisModuleKey, ele: *mut RedisModuleString, score: *const f64) -> Status;
 
 
 }
