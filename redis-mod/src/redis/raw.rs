@@ -179,8 +179,8 @@ pub fn string_ptr_len(str: *mut RedisModuleString, len: *mut size_t) -> *const u
     unsafe { RedisModule_StringPtrLen(str, len) }
 }
 
-pub fn list_push(key: *mut RedisModuleKey, place: c_int) -> Status {
-    unsafe { RedisModule_ListPush(key, place) }
+pub fn list_push(key: *mut RedisModuleKey, place: c_int, ele: *mut RedisModuleString) -> Status {
+    unsafe { RedisModule_ListPush(key, place, ele) }
 }
 
 pub fn list_pop(key: *mut RedisModuleKey, place: c_int) -> RedisModuleString {
@@ -300,7 +300,7 @@ extern "C" {
         extern "C" fn(str: *mut RedisModuleString, len: *mut size_t) -> *const u8;
 
     static RedisModule_ListPush:
-        extern "C" fn(key: *mut RedisModuleKey, place: c_int) -> Status;
+        extern "C" fn(key: *mut RedisModuleKey, place: c_int, ele: *mut RedisModuleString) -> Status;
 
     static RedisModule_ListPop:
         extern "C" fn(key: *mut RedisModuleKey, place: c_int) -> RedisModuleString;

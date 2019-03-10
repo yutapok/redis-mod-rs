@@ -324,9 +324,10 @@ impl RedisKeyWritable {
         }
     }
 
-    pub fn lpush(&self) -> Result<(), RModError> {
-        let place: c_int = 0;
-        match raw::list_push(self.key_inner,place) {
+    pub fn lpush(&self, ele: &str) -> Result<(), RModError> {
+        let ele_str = RedisString::create(self.ctx, ele);
+        let place: c_int = -1;
+        match raw::list_push(self.key_inner,place,ele_str.str_inner) {
             raw::Status::Ok => Ok(()),
             raw::Status::Err => Err(error!("Error while lpush to key, tried to the wrong type"))
         }
