@@ -4,7 +4,7 @@
 
 extern crate libc;
 
-use libc::{c_int, c_long, c_longlong, size_t};
+use libc::{c_int, c_long, c_longlong, c_double, size_t};
 
 // Rust can't link against C macros (#define) so we just redefine them here.
 // There's a ~0 chance that any of these will ever change so it's pretty safe.
@@ -179,6 +179,27 @@ pub fn string_ptr_len(str: *mut RedisModuleString, len: *mut size_t) -> *const u
     unsafe { RedisModule_StringPtrLen(str, len) }
 }
 
+pub fn list_push(key: *mut RedisModuleKey, place: c_int) -> c_int {
+    unsafe { RedisModule_ListPush(key, place) }
+}
+
+pub fn list_pop(key: *mut RedisModuleKey, place: c_int) -> RedisModuleString {
+    unsafe { RedisModule_ListPop(key, place) }
+}
+
+pub fn zset_add(key: *mut RedisModuleKey, score: c_double, ele: *mut RedisModuleString, flagsptr: *const i8) -> c_int {
+    unsafe { RedisModule_ZsetAdd(key, score, ele, flagsptr) }
+}
+
+pub fn zset_incrby(key: *mut RedisModuleKey, score: c_double, ele: *mut RedisModuleString, flagsptr: *const i8, newscore: *const f64) -> c_int {
+    unsafe { RedisModule_ZsetIncrby(key, score, ele, flagsptr, newscore) }
+}
+
+pub fn zset_score(key: *mut RedisModuleKey, ele: *mut RedisModuleString, score: *const f64) -> c_int {
+    unsafe { RedisModule_ZsetScore(key, ele, score) }
+}
+
+
 //extern function of C
 #[allow(improper_ctypes)]
 #[link(name = "redismodule", kind = "static")]
@@ -277,6 +298,21 @@ extern "C" {
 
     static RedisModule_StringPtrLen:
         extern "C" fn(str: *mut RedisModuleString, len: *mut size_t) -> *const u8;
+
+    static RedisModule_ListPush:
+        extern "C" fn(key: *mut RedisModuleKey, place: c_int) -> c_int;
+
+    static RedisModule_ListPop:
+        extern "C" fn(key: *mut RedisModuleKey, place: c_int) -> RedisModuleString;
+
+    static RedisModule_ZsetAdd:
+        extern "C" fn(key: *mut RedisModuleKey, score: c_double, ele: *mut RedisModuleString, flagsptr: *const i8) -> c_int;
+
+    static RedisModule_ZsetIncrby:
+        extern "C" fn(key: *mut RedisModuleKey, score: c_double, ele: *mut RedisModuleString, flagsptr: *const i8, newscore: *const f64) -> c_int;
+
+    static RedisModule_ZsetScore:
+        extern "C" fn(key: *mut RedisModuleKey, ele: *mut RedisModuleString, score: *const f64) -> c_int;
 
 
 }
