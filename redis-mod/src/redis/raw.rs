@@ -80,8 +80,8 @@ pub fn create_command(
             firstkey,
             lastkey,
             keystep
-        )    
-    }    
+        )
+    }
 }
 
 pub fn open_key(
@@ -313,6 +313,32 @@ extern "C" {
 
     static RedisModule_ZsetScore:
         extern "C" fn(key: *mut RedisModuleKey, ele: *mut RedisModuleString, score: *const f64) -> Status;
+
+
+}
+
+
+pub mod hash {
+    use crate::redis::raw;
+    use libc::c_int;
+
+    pub fn hash_get(
+        key: *mut raw::RedisModuleKey,
+        field: *mut raw::RedisModuleString,
+        oldval: *mut raw::RedisModuleString,
+    ) -> raw::Status {
+        unsafe{RedisModule_HashGet(key, 0, field, oldval)}
+    }
+
+    #[allow(improper_ctypes)]
+    extern "C" {
+        pub static RedisModule_HashGet: extern "C" fn(
+            key: *mut raw::RedisModuleKey,
+            flags: c_int,
+            field: *mut raw::RedisModuleString,
+            oldval: *mut raw::RedisModuleString,
+        ) -> raw::Status;
+    }
 
 
 }
