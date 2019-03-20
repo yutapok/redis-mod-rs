@@ -17,6 +17,16 @@ bitflags! {
     }
 }
 
+bitflags! {
+    pub struct HashFlags: c_int {
+        const NONE = 0;
+        const NX = (1 << 0);
+        const XX = (1 << 1);
+        const CFIELDS = (1 << 2);
+        const EXISTS = (1 << 3);
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub enum ReplyType{
     Unknown = -1,
@@ -32,6 +42,10 @@ pub enum Status {
     Ok = 0,
     Err = 1,
 }
+
+#[derive(Clone, Copy)]
+#[repr(C)]
+pub struct RedisModuleCallReply;
 
 #[derive(Clone, Copy)]
 #[repr(C)]
@@ -61,6 +75,27 @@ pub fn init(
 ) -> Status {
     unsafe{ Export_RedisModule_Init(ctx, modulename, module_version, api_version) }
 }
+
+pub fn call_reply_type(reply: *mut RedisModuleCallReply) -> ReplyType {
+    unsafe { RedisModule_CallReplyType(reply) }
+}
+
+pub fn free_call_reply(reply: *mut RedisModuleCallReply) {
+    unsafe { RedisModule_FreeCallReply(reply) }
+}
+
+pub fn call_reply_integer(reply: *mut RedisModuleCallReply) -> c_longlong {
+    unsafe { RedisModule_CallReplyInteger(reply) }
+}
+
+pub fn call_reply_string_ptr(
+    str: *mut RedisModuleCallReply,
+    len: *mut size_t,
+) -> *const u8 {
+    unsafe { RedisModule_CallReplyStringPtr(str, len) }
+}
+
+
 
 pub fn create_command(
     ctx: *mut RedisModuleCtx,
@@ -211,6 +246,17 @@ extern "C" {
         api_version: c_int,
     ) -> Status;
 
+    static RedisModule_CallReplyType:
+        extern "C" fn(reply: *mut RedisModuleCallReply) -> ReplyType;
+
+    static RedisModule_FreeCallReply: extern "C" fn(reply: *mut RedisModuleCallReply);
+
+    static RedisModule_CallReplyInteger:
+        extern "C" fn(reply: *mut RedisModuleCallReply) -> c_longlong;
+
+    static RedisModule_CallReplyStringPtr:
+        extern "C" fn(str: *mut RedisModuleCallReply, len: *mut size_t) -> *const u8;
+
     static RedisModule_CreateCommand:
         extern "C" fn(
             ctx: *mut RedisModuleCtx,
@@ -317,26 +363,130 @@ extern "C" {
 
 }
 
+pub mod call1 {
+    use crate::redis::raw;
+
+    pub fn call(
+        ctx: *mut raw::RedisModuleCtx,
+        cmdname: *const u8,
+        fmt: *const u8,
+        arg0: *mut raw::RedisModuleString,
+    ) -> *mut raw::RedisModuleCallReply {
+        unsafe { RedisModule_Call(ctx, cmdname, fmt, arg0) }
+    }
+
+    #[allow(improper_ctypes)]
+    extern "C" {
+        pub static RedisModule_Call: extern "C" fn(
+            ctx: *mut raw::RedisModuleCtx,
+            cmdname: *const u8,
+            fmt: *const u8,
+            arg0: *mut raw::RedisModuleString,
+        )
+            -> *mut raw::RedisModuleCallReply;
+    }
+}
+
+pub mod call2 {
+    use crate::redis::raw;
+
+    pub fn call(
+        ctx: *mut raw::RedisModuleCtx,
+        cmdname: *const u8,
+        fmt: *const u8,
+        arg0: *mut raw::RedisModuleString,
+        arg1: *mut raw::RedisModuleString,
+    ) -> *mut raw::RedisModuleCallReply {
+        unsafe { RedisModule_Call(ctx, cmdname, fmt, arg0, arg1) }
+    }
+
+    #[allow(improper_ctypes)]
+    extern "C" {
+        pub static RedisModule_Call: extern "C" fn(
+            ctx: *mut raw::RedisModuleCtx,
+            cmdname: *const u8,
+            fmt: *const u8,
+            arg0: *mut raw::RedisModuleString,
+            arg1: *mut raw::RedisModuleString,
+        )
+            -> *mut raw::RedisModuleCallReply;
+    }
+}
+
+pub mod call3 {
+    use crate::redis::raw;
+
+    pub fn call(
+        ctx: *mut raw::RedisModuleCtx,
+        cmdname: *const u8,
+        fmt: *const u8,
+        arg0: *mut raw::RedisModuleString,
+        arg1: *mut raw::RedisModuleString,
+        arg2: *mut raw::RedisModuleString,
+    ) -> *mut raw::RedisModuleCallReply {
+        unsafe { RedisModule_Call(ctx, cmdname, fmt, arg0, arg1, arg2) }
+    }
+
+    #[allow(improper_ctypes)]
+    extern "C" {
+        pub static RedisModule_Call: extern "C" fn(
+            ctx: *mut raw::RedisModuleCtx,
+            cmdname: *const u8,
+            fmt: *const u8,
+            arg0: *mut raw::RedisModuleString,
+            arg1: *mut raw::RedisModuleString,
+            arg2: *mut raw::RedisModuleString,
+        )
+            -> *mut raw::RedisModuleCallReply;
+    }
+}
 
 pub mod hash {
     use crate::redis::raw;
-    use libc::c_int;
+
+    #[derive(Clone, Copy, Debug, PartialEq)]
+    pub enum HashFlags {
+        NONE,
+        NX,
+        XX,
+        CFIELDS,
+        EXISTS
+    }
 
     pub fn hash_get(
         key: *mut raw::RedisModuleKey,
         field: *mut raw::RedisModuleString,
-        oldval: *mut raw::RedisModuleString,
+        oldval: &*mut raw::RedisModuleString
     ) -> raw::Status {
-        unsafe{RedisModule_HashGet(key, 0, field, oldval)}
+        let flags = HashFlags::NONE;
+        unsafe{ RedisModule_HashGet(key, flags, field, oldval, None) }
+    }
+
+    pub fn hash_set(
+        key: *mut raw::RedisModuleKey,
+        field: *mut raw::RedisModuleString,
+        val: *mut raw::RedisModuleString,
+    ) -> raw::Status {
+        let flags = HashFlags::NONE;
+        unsafe{ RedisModule_HashSet(key, flags, field, val, None) }
     }
 
     #[allow(improper_ctypes)]
     extern "C" {
         pub static RedisModule_HashGet: extern "C" fn(
             key: *mut raw::RedisModuleKey,
-            flags: c_int,
+            flags: HashFlags,
             field: *mut raw::RedisModuleString,
-            oldval: *mut raw::RedisModuleString,
+            oldval: &*mut raw::RedisModuleString,
+            nullp: Option<extern "C" fn(i32)>
+        ) -> raw::Status;
+
+        pub static RedisModule_HashSet: extern "C" fn(
+            key: *mut raw::RedisModuleKey,
+            flags: HashFlags,
+            field: *mut raw::RedisModuleString,
+            val: *mut raw::RedisModuleString,
+            nullp: Option<extern "C" fn(i32)>
         ) -> raw::Status;
     }
 

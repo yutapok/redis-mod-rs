@@ -7,6 +7,7 @@
            allow(redundant_field_names, suspicious_arithmetic_impl))]
 pub mod raw;
 
+use std::iter;
 use std::error::Error;
 use crate::error::RModError;
 use libc::{c_int, c_long, c_longlong, size_t};
@@ -95,7 +96,65 @@ pub struct Redis {
 }
 
 impl Redis {
-      /// Coerces a Redis string as an integer.size_t///
+        pub fn call(&self, command: &str, args: &[&str]) -> Result<Reply, RModError> {
+
+        // We use a "format" string to tell redis what types we're passing in.
+        // Currently we just pass everything as a string so this is just the
+        // character "s" repeated as many times as we have arguments.
+        //
+        // It would be nice to start passing some parameters as their actual
+        // type (for example, i64s as long longs), but Redis stringifies these
+        // on the other end anyway so the practical benefit will be minimal.
+        let format: String = iter::repeat("s").take(args.len()).collect();
+
+        let terminated_args: Vec<RedisString> =
+            args.iter().map(|s| self.create_string(s)).collect();
+
+        // One would hope that there's a better way to handle a va_list than
+        // this, but I can't find it for the life of me.
+        let raw_reply = match args.len() {
+            1 => {
+                // WARNING: This is downright hazardous, but I've noticed that
+                // if I remove this format! from the line of invocation, the
+                // right memory layout doesn't make it into Redis (and it will
+                // reply with a -1 "unknown" to all calls). This is still
+                // unexplained and I need to do more legwork in understanding
+                // this.
+                //
+                // Still, this works fine and will continue to work as long as
+                // it's left unchanged.
+                raw::call1::call(
+                    self.ctx,
+                    format!("{}\0", command).as_ptr(),
+                    format!("{}\0", format).as_ptr(),
+                    terminated_args[0].str_inner,
+                )
+            }
+            2 => raw::call2::call(
+                self.ctx,
+                format!("{}\0", command).as_ptr(),
+                format!("{}\0", format).as_ptr(),
+                terminated_args[0].str_inner,
+                terminated_args[1].str_inner,
+            ),
+            3 => raw::call3::call(
+                self.ctx,
+                format!("{}\0", command).as_ptr(),
+                format!("{}\0", format).as_ptr(),
+                terminated_args[0].str_inner,
+                terminated_args[1].str_inner,
+                terminated_args[2].str_inner,
+            ),
+            _ => return Err(error!("Can't support that many CALL arguments")),
+        };
+
+        let reply_res = manifest_redis_reply(raw_reply);
+        raw::free_call_reply(raw_reply);
+
+        reply_res
+    }
+
+    /// Coerces a Redis string as an integer.size_t///
     /// Redis is pretty dumb about data types. It nominally supports strings
     /// versus integers, but an integer set in the store will continue to look
     /// like a string (i.e. "1234") until some other operation like INCR forces
@@ -363,16 +422,38 @@ impl RedisKeyWritable {
     //        raw::Status::Err => Err(error!("Error while lpop to key, tried to the wrong type"))
     //    }
     //}
-    pub fn hget(&self, field: &str) -> Result<String, RModError> {
-        let re_str = RedisString::create(self.ctx, field);
-        let tmp_str = RedisString::create(self.ctx,"");
-        match raw::hash::hash_get(
+
+    pub fn hget(&self, field: &str) -> Result<Option<String>, RModError> {
+        let fld_str = RedisString::create(self.ctx, field);
+        let val_str = RedisString::create(self.ctx, "");
+        let hash_val = raw::hash::hash_get(
             self.key_inner,
-            re_str.str_inner,
-            tmp_str.str_inner
+            fld_str.str_inner,
+            &val_str.str_inner
+        );
+        match hash_val{
+            raw::Status::Ok => match manifest_redis_string(val_str.str_inner){
+                Ok(re_str) =>  Ok(Some(re_str)),
+                Err(_) => Ok(None),
+            },
+            raw::Status::Err => Err(error!(
+                "Error while hget key, sth of err occured inside redismodule api"
+            ))
+        }
+    }
+
+    pub fn hset(&self, field: &str, val: &str) -> Result<(), RModError> {
+        let fld_str = RedisString::create(self.ctx, field);
+        let val_str = RedisString::create(self.ctx, val);
+        match raw::hash::hash_set(
+            self.key_inner,
+            fld_str.str_inner,
+            val_str.str_inner
         ){
-            raw::Status::Ok => Ok(manifest_redis_string(tmp_str.str_inner).unwrap()),
-            raw::Status::Err => Err(error!("Err"))
+            raw::Status::Ok => Ok(()),
+            raw::Status::Err => Err(error!(
+                "Error while hset key, sth of err occured inside redismodule api"
+            ))
         }
     }
 }
@@ -402,7 +483,6 @@ impl RedisString {
         let str_inner = raw::create_string(ctx, format!("{}\0", s).as_ptr(), s.len());
         RedisString { ctx, str_inner }
     }
-
 }
 
 impl Drop for RedisString {
@@ -418,6 +498,30 @@ fn handle_status(status: raw::Status, message: &str) -> Result<(), RModError> {
         raw::Status::Err => Err(error!(message)),
     }
 }
+
+fn manifest_redis_reply(
+    reply: *mut raw::RedisModuleCallReply,
+) -> Result<Reply, RModError> {
+    match raw::call_reply_type(reply) {
+        raw::ReplyType::Integer => Ok(Reply::Integer(raw::call_reply_integer(reply))),
+        raw::ReplyType::Nil => Ok(Reply::Nil),
+        raw::ReplyType::String => {
+            let mut length: size_t = 0;
+            let bytes = raw::call_reply_string_ptr(reply, &mut length);
+            from_byte_string(bytes, length)
+                .map(Reply::String)
+                .map_err(RModError::from)
+        }
+        raw::ReplyType::Unknown => Ok(Reply::Unknown),
+
+        // TODO: I need to actually extract the error from Redis here. Also, it
+        // should probably be its own non-generic variety of RModError.
+        raw::ReplyType::Error => Err(error!("Redis replied with an error.")),
+
+        other => Err(error!("Don't yet handle Redis type: {:?}", other)),
+    }
+}
+
 
 fn manifest_redis_string(
     redis_str: *mut raw::RedisModuleString,
