@@ -363,6 +363,18 @@ impl RedisKeyWritable {
     //        raw::Status::Err => Err(error!("Error while lpop to key, tried to the wrong type"))
     //    }
     //}
+    pub fn hget(&self, field: &str) -> Result<String, RModError> {
+        let re_str = RedisString::create(self.ctx, field);
+        let tmp_str = RedisString::create(self.ctx,"");
+        match raw::hash::hash_get(
+            self.key_inner,
+            re_str.str_inner,
+            tmp_str.str_inner
+        ){
+            raw::Status::Ok => Ok(manifest_redis_string(tmp_str.str_inner).unwrap()),
+            raw::Status::Err => Err(error!("Err"))
+        }
+    }
 }
 
 impl Drop for RedisKeyWritable {
