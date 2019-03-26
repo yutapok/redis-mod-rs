@@ -196,8 +196,8 @@ pub fn reply_with_string(
 
 pub fn reply_with_simple_string(
     ctx: *mut RedisModuleCtx,
-    msg: *const u8 
-) -> Status {
+    msg: *const u8
+) {
     unsafe { RedisModule_ReplyWithSimpleString(ctx, msg) }
 }
 
@@ -340,8 +340,8 @@ extern "C" {
     static RedisModule_ReplyWithSimpleString:
         extern "C" fn(
             ctx: *mut RedisModuleCtx,
-            msg: *const u8 
-    ) -> Status;
+            msg: *const u8
+    );
 
     static RedisModule_ReplyWithNull:
         extern "C" fn(

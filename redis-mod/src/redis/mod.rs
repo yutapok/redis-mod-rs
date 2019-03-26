@@ -231,27 +231,24 @@ impl Redis {
         )
     }
 
-    pub fn reply_with_simple_string(&self, str: &str) -> Result<(), RModError> {
-        let msg = str.as_ptr();
-        handle_status(
-            raw::reply_with_simple_string(self.ctx, msg),
-            "Could not reply with simple string",
+    pub fn reply_with_simple_string(&self, message: &str) {
+        raw::reply_with_simple_string(
+            self.ctx,
+            format!("{}\0",message).as_ptr()
         )
     }
 
     pub fn reply_ok(&self){
-        self.reply_with_simple_string("Ok").unwrap_or(());
+        raw::reply_with_simple_string(
+            self.ctx,
+            format!("OK\0").as_ptr()
+        )
     }
 
     pub fn reply_null(&self) {
         raw::reply_with_null(self.ctx);
     }
 
-    pub fn reply_null_with_ok(&self, msg: &str) -> Result<(), RModError>{
-        self.log(LogLevel::Warning, msg);
-        Ok(self.reply_null())
-    }
- 
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
