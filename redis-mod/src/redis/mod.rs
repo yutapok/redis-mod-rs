@@ -416,11 +416,11 @@ impl RedisKeyWritable {
     }
 
     pub fn lpop(&self) -> Result<Option<String>, RModError> {
-        match self.is_empty() {
-            Err(_) => return Err(error!("Error while lpop to key, something err occur inside redismoduleapi")),
-            Ok(true) => return Ok(None),
-            Ok(false) => (),
-        }
+        //match self.is_empty() {
+        //    Err(_) => return Err(error!("Error while lpop to key, something err occur inside redismoduleapi")),
+        //    Ok(true) => return Ok(None),
+        //    Ok(false) => (),
+        //}
         let place: c_int = 0;
         let redis_str = raw::list_pop(self.key_inner,place);
         match manifest_redis_string(redis_str){
