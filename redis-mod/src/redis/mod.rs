@@ -415,13 +415,19 @@ impl RedisKeyWritable {
         }
     }
 
-    //pub fn lpop(&self, ele: &str) -> Result<(), RModError> {
-    //    let place: c_int = 0;
-    //    match raw::list_pop(self.key_inner,place) {
-    //        raw::Status::Ok => Ok(()),
-    //        raw::Status::Err => Err(error!("Error while lpop to key, tried to the wrong type"))
-    //    }
-    //}
+    pub fn lpop(&self) -> Result<Option<String>, RModError> {
+        match self.is_empty() {
+            Err(_) => return Err(error!("Error while lpop to key, something err occur inside redismoduleapi")),
+            Ok(true) => return Ok(None),
+            Ok(false) => (),
+        }
+        let place: c_int = 0;
+        let redis_str = raw::list_pop(self.key_inner,place);
+        match manifest_redis_string(redis_str){
+            Ok(re_str) => Ok(Some(re_str)),
+            Err(_) => Err(error!("Error while lpop to key, tried to the wrong type"))
+        }
+    }
 
     pub fn hget(&self, field: &str) -> Result<Option<String>, RModError> {
         let fld_str = RedisString::create(self.ctx, field);
