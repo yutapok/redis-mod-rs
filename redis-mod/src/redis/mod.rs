@@ -39,10 +39,10 @@ pub enum Reply {
 pub trait Command {
     // Should return the name of the command to be registered.
     fn name(&self) -> &'static str;
-    
+
     // Run the command.
     fn run(&self, r: Redis, args: &[&str]) -> Result<(), RModError>;
-    
+
     // Should return any flags to be registered with the name as a string
     // separated list. See the latest Redis module API documentation for a complete
     // list of the ones that are available. 
@@ -416,11 +416,12 @@ impl RedisKeyWritable {
     }
 
     pub fn lpop(&self) -> Result<Option<String>, RModError> {
-        //match self.is_empty() {
-        //    Err(_) => return Err(error!("Error while lpop to key, something err occur inside redismoduleapi")),
-        //    Ok(true) => return Ok(None),
-        //    Ok(false) => (),
-        //}
+        match raw::key_type(self.key_inner) {
+            raw::KeyType::Empty => return Ok(None),
+            raw::KeyType::List  => (),
+            _ => return Err(error!("Error while lpop to key, not List structure")),
+        }
+
         let place: c_int = 0;
         let redis_str = raw::list_pop(self.key_inner,place);
         match manifest_redis_string(redis_str){

@@ -43,6 +43,18 @@ pub enum Status {
     Err = 1,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum KeyType{
+    Empty = 0,
+    String = 1,
+    List = 2,
+    Hash = 3,
+    Set = 4,
+    Zset = 5,
+    Module = 6,
+}
+
+
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub struct RedisModuleCallReply;
@@ -124,18 +136,22 @@ pub fn open_key(
     name: *mut RedisModuleString,
     mode: KeyMode
 ) -> *mut RedisModuleKey {
-    unsafe { RedisModule_OpenKey(ctx, name, mode) } 
+    unsafe { RedisModule_OpenKey(ctx, name, mode) }
 }
 
 pub fn close_key(kp: *mut RedisModuleKey) {
     unsafe { RedisModule_CloseKey(kp) }
 }
 
+pub fn key_type(kp: *mut RedisModuleKey) -> KeyType {
+    unsafe { RedisModule_KeyType(kp) }
+}
+
 pub fn string_set(
     key: *mut RedisModuleKey,
     val: *mut RedisModuleString
 ) -> Status {
-    unsafe{ RedisModule_StringSet(key, val) }    
+    unsafe{ RedisModule_StringSet(key, val) }
 }
 
 pub fn string_dma(
@@ -147,25 +163,25 @@ pub fn string_dma(
 }
 
 pub fn delete_key(key: *mut RedisModuleKey) -> Status {
-    unsafe { RedisModule_DeleteKey(key) }    
+    unsafe { RedisModule_DeleteKey(key) }
 }
 
 pub fn reply_with_array(
-    ctx: *mut RedisModuleCtx, 
+    ctx: *mut RedisModuleCtx,
     len: c_long
 ) -> Status {
     unsafe { RedisModule_ReplyWithArray(ctx, len) }
 }
 
 pub fn reply_with_error(
-    ctx: *mut RedisModuleCtx, 
+    ctx: *mut RedisModuleCtx,
     err: *const u8
 ) {
     unsafe { RedisModule_ReplyWithError(ctx, err) }
 }
 
 pub fn reply_with_long_long(
-    ctx: *mut RedisModuleCtx, 
+    ctx: *mut RedisModuleCtx,
     ll: c_longlong
 ) -> Status {
     unsafe { RedisModule_ReplyWithLongLong(ctx, ll) }
@@ -270,13 +286,16 @@ extern "C" {
 
     static RedisModule_OpenKey:
         extern "C" fn(
-            ctx: *mut RedisModuleCtx, 
-            name: *mut RedisModuleString, 
-            mode: KeyMode 
+            ctx: *mut RedisModuleCtx,
+            name: *mut RedisModuleString,
+            mode: KeyMode
         ) -> *mut RedisModuleKey;
 
-    static RedisModule_CloseKey: 
+    static RedisModule_CloseKey:
         extern "C" fn(kp: *mut RedisModuleKey);
+
+    static RedisModule_KeyType:
+        extern "C" fn(kp: *mut RedisModuleKey) -> KeyType;
 
     static RedisModule_StringSet:
         extern "C" fn(
@@ -286,8 +305,8 @@ extern "C" {
 
     static RedisModule_StringDMA:
         extern "C" fn(
-            key: *mut RedisModuleKey, 
-            len: *mut size_t, 
+            key: *mut RedisModuleKey,
+            len: *mut size_t,
             mode: KeyMode
         ) -> *const u8;
 
@@ -296,31 +315,31 @@ extern "C" {
 
     static RedisModule_ReplyWithArray:
         extern "C" fn(
-            ctx: *mut RedisModuleCtx, 
+            ctx: *mut RedisModuleCtx,
             len: c_long
         ) -> Status;
 
     static RedisModule_ReplyWithError:
         extern "C" fn(
-            ctx: *mut RedisModuleCtx, 
+            ctx: *mut RedisModuleCtx,
             err: *const u8
         );
 
     static RedisModule_ReplyWithLongLong:
         extern "C" fn(
-            ctx: *mut RedisModuleCtx, 
+            ctx: *mut RedisModuleCtx,
             ll: c_longlong
         ) -> Status;
 
     static RedisModule_ReplyWithString:
         extern "C" fn(
-            ctx: *mut RedisModuleCtx, 
+            ctx: *mut RedisModuleCtx,
             str: *mut RedisModuleString
     ) -> Status;
 
     static RedisModule_ReplyWithSimpleString:
         extern "C" fn(
-            ctx: *mut RedisModuleCtx, 
+            ctx: *mut RedisModuleCtx,
             msg: *const u8 
     ) -> Status;
 
