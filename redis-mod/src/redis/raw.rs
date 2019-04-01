@@ -238,16 +238,26 @@ pub fn list_pop(key: *mut RedisModuleKey, place: c_int) -> *mut RedisModuleStrin
     unsafe { RedisModule_ListPop(key, place) }
 }
 
-pub fn zset_add(key: *mut RedisModuleKey, score: c_double, ele: *mut RedisModuleString, flagsptr: *const i8) -> Status {
-    unsafe { RedisModule_ZsetAdd(key, score, ele, flagsptr) }
+pub fn callable2(
+    ctx: *mut RedisModuleCtx,
+    cmdname: *const i8,
+    key: *const i8,
+    arg0: *const i8,
+) -> c_longlong {
+    unsafe{ RedisModuleCallable2_ReplyInteger(ctx, cmdname, key, arg0) }
 }
 
-pub fn zset_incrby(key: *mut RedisModuleKey, score: c_double, ele: *mut RedisModuleString, flagsptr: *const i8, newscore: *const f64) -> Status {
-    unsafe { RedisModule_ZsetIncrby(key, score, ele, flagsptr, newscore) }
-}
 
-pub fn zset_score(key: *mut RedisModuleKey, ele: *mut RedisModuleString, score: *const f64) -> Status {
-    unsafe { RedisModule_ZsetScore(key, ele, score) }
+//extern function of C
+#[allow(improper_ctypes)]
+#[link(name = "redis_mod_callable", kind = "static")]
+extern "C" {
+    pub fn RedisModuleCallable2_ReplyInteger(
+        ctx: *mut RedisModuleCtx,
+        cmdname: *const i8,
+        key: *const i8,
+        arg0: *const i8,
+    ) -> c_longlong;
 }
 
 
@@ -261,6 +271,13 @@ extern "C" {
         module_version: c_int,
         api_version: c_int,
     ) -> Status;
+
+    static RedisModule_Call: extern "C" fn(
+        ctx: *mut RedisModuleCtx,
+        cmdname: *const u8,
+        fmt: *const u8,
+        args: *const *mut RedisModuleString,
+    ) -> *mut RedisModuleCallReply;
 
     static RedisModule_CallReplyType:
         extern "C" fn(reply: *mut RedisModuleCallReply) -> ReplyType;
@@ -370,20 +387,12 @@ extern "C" {
     static RedisModule_ListPop:
         extern "C" fn(key: *mut RedisModuleKey, place: c_int) -> *mut RedisModuleString;
 
-    static RedisModule_ZsetAdd:
-        extern "C" fn(key: *mut RedisModuleKey, score: c_double, ele: *mut RedisModuleString, flagsptr: *const i8) -> Status;
-
-    static RedisModule_ZsetIncrby:
-        extern "C" fn(key: *mut RedisModuleKey, score: c_double, ele: *mut RedisModuleString, flagsptr: *const i8, newscore: *const f64) -> Status;
-
-    static RedisModule_ZsetScore:
-        extern "C" fn(key: *mut RedisModuleKey, ele: *mut RedisModuleString, score: *const f64) -> Status;
-
 
 }
 
 pub mod call1 {
     use crate::redis::raw;
+    use std::os::raw::c_char;
 
     pub fn call(
         ctx: *mut raw::RedisModuleCtx,
@@ -411,10 +420,10 @@ pub mod call2 {
 
     pub fn call(
         ctx: *mut raw::RedisModuleCtx,
-        cmdname: *const u8,
-        fmt: *const u8,
-        arg0: *mut raw::RedisModuleString,
-        arg1: *mut raw::RedisModuleString,
+        cmdname: *const i8,
+        fmt: *const i8,
+        arg0: *const i8,
+        arg1: *const i8,
     ) -> *mut raw::RedisModuleCallReply {
         unsafe { RedisModule_Call(ctx, cmdname, fmt, arg0, arg1) }
     }
@@ -423,10 +432,10 @@ pub mod call2 {
     extern "C" {
         pub static RedisModule_Call: extern "C" fn(
             ctx: *mut raw::RedisModuleCtx,
-            cmdname: *const u8,
-            fmt: *const u8,
-            arg0: *mut raw::RedisModuleString,
-            arg1: *mut raw::RedisModuleString,
+            cmdname: *const i8,
+            fmt: *const i8,
+            arg0: *const i8,
+            arg1: *const i8,
         )
             -> *mut raw::RedisModuleCallReply;
     }
@@ -508,6 +517,6 @@ pub mod hash {
             nullp: Option<extern "C" fn(i32)>
         ) -> raw::Status;
     }
-
-
 }
+
+

@@ -14,6 +14,8 @@ use libc::{c_int, c_long, c_longlong, size_t};
 use std::ptr;
 use std::string;
 use time;
+use std::ffi::CString;
+use std::os::raw::c_char;
 
 /// `LogLevel` is a level of logging to be specified with a Redis log directive.
 #[derive(Clone, Copy, Debug)]
@@ -96,6 +98,14 @@ pub struct Redis {
 }
 
 impl Redis {
+        pub fn callable2(&self, cmdname: &str, args0: &str, args1: &str) -> c_longlong {
+            let cmdname = CString::new(cmdname).expect("CString::new(cmdname) failed");
+            let key = CString::new(args0).expect("CString::new(key) failed");
+            let arg0 = CString::new(args1).expect("CString::new(arg0) failed");
+            raw::callable2(self.ctx, cmdname.as_ptr(), key.as_ptr(), arg0.as_ptr())
+
+        }
+
         pub fn call(&self, command: &str, args: &[&str]) -> Result<Reply, RModError> {
 
         // We use a "format" string to tell redis what types we're passing in.
@@ -112,6 +122,8 @@ impl Redis {
 
         // One would hope that there's a better way to handle a va_list than
         // this, but I can't find it for the life of me.
+        let cmd_cstr = CString::new(command).expect("cstring new failed");
+
         let raw_reply = match args.len() {
             1 => {
                 // WARNING: This is downright hazardous, but I've noticed that
@@ -132,11 +144,16 @@ impl Redis {
             }
             2 => raw::call2::call(
                 self.ctx,
-                format!("{}\0", command).as_ptr(),
-                format!("{}\0", format).as_ptr(),
-                terminated_args[0].str_inner,
-                terminated_args[1].str_inner,
+                //format!("{}\0", command).as_ptr(),
+                //format!("cc\0").as_ptr(),
+                //terminated_args[0].str_inner,
+                //terminated_args[1].str_inner,
+                cmd_cstr.as_ptr(),
+                CString::new("cc").expect("cstring new failed").as_ptr(),
+                CString::new(args[0]).expect("cstring new failed").as_ptr(),
+                CString::new(args[1]).expect("cstring new failed").as_ptr(),
             ),
+
             3 => raw::call3::call(
                 self.ctx,
                 format!("{}\0", command).as_ptr(),

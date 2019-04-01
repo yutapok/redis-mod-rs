@@ -11,4 +11,10 @@ fn main() {
         .file("src/redismodule.c")
         .include("include/")
         .compile("libredismodule.a");
+
+    cc::Build::new()
+        .file("src/redis_mod_callable.c")
+        .include("include/")
+        .compile("libredis_mod_callable.a");
 }
+
