@@ -4,7 +4,7 @@
 
 extern crate libc;
 
-use libc::{c_int, c_long, c_longlong, c_double, size_t};
+use libc::{c_int, c_long, c_longlong, size_t};
 
 // Rust can't link against C macros (#define) so we just redefine them here.
 // There's a ~0 chance that any of these will ever change so it's pretty safe.
@@ -238,7 +238,7 @@ pub fn list_pop(key: *mut RedisModuleKey, place: c_int) -> *mut RedisModuleStrin
     unsafe { RedisModule_ListPop(key, place) }
 }
 
-pub fn callable2(
+pub fn callable2_reply_int(
     ctx: *mut RedisModuleCtx,
     cmdname: *const i8,
     key: *const i8,
@@ -392,7 +392,6 @@ extern "C" {
 
 pub mod call1 {
     use crate::redis::raw;
-    use std::os::raw::c_char;
 
     pub fn call(
         ctx: *mut raw::RedisModuleCtx,

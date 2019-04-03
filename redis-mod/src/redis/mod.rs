@@ -15,7 +15,6 @@ use std::ptr;
 use std::string;
 use time;
 use std::ffi::CString;
-use std::os::raw::c_char;
 
 /// `LogLevel` is a level of logging to be specified with a Redis log directive.
 #[derive(Clone, Copy, Debug)]
@@ -98,11 +97,11 @@ pub struct Redis {
 }
 
 impl Redis {
-        pub fn callable2(&self, cmdname: &str, args0: &str, args1: &str) -> c_longlong {
+        pub fn call2_reply_int(&self, cmdname: &str, args0: &str, args1: &str) -> c_longlong {
             let cmdname = CString::new(cmdname).expect("CString::new(cmdname) failed");
             let key = CString::new(args0).expect("CString::new(key) failed");
             let arg0 = CString::new(args1).expect("CString::new(arg0) failed");
-            raw::callable2(self.ctx, cmdname.as_ptr(), key.as_ptr(), arg0.as_ptr())
+            raw::callable2_reply_int(self.ctx, cmdname.as_ptr(), key.as_ptr(), arg0.as_ptr())
 
         }
 
