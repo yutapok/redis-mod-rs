@@ -476,6 +476,15 @@ impl RedisKeyWritable {
             ))
         }
     }
+
+    pub fn rm_hget(&self, field: &str) -> Option<String> {
+        let fld_str = RedisString::create(self.ctx, field);
+        let val_str = raw::rm_hash_get(self.key_inner, fld_str.str_inner);
+        match manifest_redis_string(val_str){
+            Ok(re_str) => Some(re_str),
+            Err(_) => None
+        }
+    }
 }
 
 impl Drop for RedisKeyWritable {

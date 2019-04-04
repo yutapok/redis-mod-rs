@@ -29,3 +29,16 @@ long long RedisModuleCallable2_ReplyInteger(RedisModuleCtx *ctx, const char *cmd
 
     return reply_int;
 }
+
+
+RedisModuleString *RedisModuleHash_Get(RedisModuleKey *key, RedisModuleString *field){
+    RedisModuleString *oldval;
+    RedisModule_HashGet(key, REDISMODULE_HASH_NONE, field, &oldval, NULL);
+    return oldval;
+}
+
+int RedisModuleHash_Set(RedisModuleKey *key, RedisModuleString *field, RedisModuleString *val){
+    RedisModule_HashSet(key, REDISMODULE_HASH_NONE, field, val, NULL);
+    return REDISMODULE_OK;
+}
+

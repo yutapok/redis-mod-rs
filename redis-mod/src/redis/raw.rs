@@ -247,6 +247,20 @@ pub fn callable2_reply_int(
     unsafe{ RedisModuleCallable2_ReplyInteger(ctx, cmdname, key, arg0) }
 }
 
+pub fn rm_hash_get(
+    key: *mut RedisModuleKey,
+    field: *mut RedisModuleString
+) -> *mut RedisModuleString {
+    unsafe { RedisModuleHash_Get(key, field) }
+}
+
+pub fn rm_hash_set(
+    key: *mut RedisModuleKey,
+    field: *mut RedisModuleString,
+    val: *mut RedisModuleString
+) -> Status {
+    unsafe { RedisModuleHash_Set(key, field, val) }
+}
 
 //extern function of C
 #[allow(improper_ctypes)]
@@ -258,6 +272,17 @@ extern "C" {
         key: *const i8,
         arg0: *const i8,
     ) -> c_longlong;
+
+    pub fn RedisModuleHash_Get(
+        key: *mut RedisModuleKey,
+        field: *mut RedisModuleString
+    ) -> *mut RedisModuleString;
+
+    pub fn RedisModuleHash_Set(
+        key: *mut RedisModuleKey,
+        field: *mut RedisModuleString,
+        val: *mut RedisModuleString
+    ) -> Status;
 }
 
 
