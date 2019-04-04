@@ -485,6 +485,21 @@ impl RedisKeyWritable {
             Err(_) => None
         }
     }
+
+    pub fn rm_hset(&self, field: &str, val: &str) -> Result<(), RModError> {
+        let fld_str = RedisString::create(self.ctx, field);
+        let val_str = RedisString::create(self.ctx, val;
+        match raw::rm_hash_set(
+            self.key_inner,
+            fld_str.str_inner,
+            val_str.str_inner
+        ){
+            raw::Status::Ok => Ok(()),
+            raw::Status::Err => Err(error!(
+                "Error while hset key value, sth of err occured inside redismodule api"
+            ))
+        }
+    }
 }
 
 impl Drop for RedisKeyWritable {
