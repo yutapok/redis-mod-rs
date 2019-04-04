@@ -488,7 +488,7 @@ impl RedisKeyWritable {
 
     pub fn rm_hset(&self, field: &str, val: &str) -> Result<(), RModError> {
         let fld_str = RedisString::create(self.ctx, field);
-        let val_str = RedisString::create(self.ctx, val;
+        let val_str = RedisString::create(self.ctx, val);
         match raw::rm_hash_set(
             self.key_inner,
             fld_str.str_inner,
