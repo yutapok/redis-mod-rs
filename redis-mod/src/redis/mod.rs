@@ -13,6 +13,7 @@ use libc::{c_int, c_long, c_longlong, size_t};
 use std::ptr;
 use std::string;
 use time;
+use std::ffi::CString;
 
 /// `LogLevel` is a level of logging to be specified with a Redis log directive.
 #[derive(Clone, Copy, Debug)]
@@ -38,10 +39,10 @@ pub enum Reply {
 pub trait Command {
     // Should return the name of the command to be registered.
     fn name(&self) -> &'static str;
-    
+
     // Run the command.
     fn run(&self, r: Redis, args: &[&str]) -> Result<(), RModError>;
-    
+
     // Should return any flags to be registered with the name as a string
     // separated list. See the latest Redis module API documentation for a complete
     // list of the ones that are available. 
@@ -95,7 +96,16 @@ pub struct Redis {
 }
 
 impl Redis {
-      /// Coerces a Redis string as an integer.size_t///
+        pub fn call2_reply_int(&self, cmdname: &str, args0: &str, args1: &str) -> c_longlong {
+            let cmdname = CString::new(cmdname).expect("CString::new(cmdname) failed");
+            let key = CString::new(args0).expect("CString::new(key) failed");
+            let arg0 = CString::new(args1).expect("CString::new(arg0) failed");
+            raw::callable2_reply_int(self.ctx, cmdname.as_ptr(), key.as_ptr(), arg0.as_ptr())
+
+        }
+
+
+    /// Coerces a Redis string as an integer.size_t///
     /// Redis is pretty dumb about data types. It nominally supports strings
     /// versus integers, but an integer set in the store will continue to look
     /// like a string (i.e. "1234") until some other operation like INCR forces
@@ -172,27 +182,24 @@ impl Redis {
         )
     }
 
-    pub fn reply_with_simple_string(&self, str: &str) -> Result<(), RModError> {
-        let msg = str.as_ptr();
-        handle_status(
-            raw::reply_with_simple_string(self.ctx, msg),
-            "Could not reply with simple string",
+    pub fn reply_with_simple_string(&self, message: &str) {
+        raw::reply_with_simple_string(
+            self.ctx,
+            format!("{}\0",message).as_ptr()
         )
     }
 
     pub fn reply_ok(&self){
-        self.reply_with_simple_string("Ok").unwrap_or(());
+        raw::reply_with_simple_string(
+            self.ctx,
+            format!("OK\0").as_ptr()
+        )
     }
 
     pub fn reply_null(&self) {
         raw::reply_with_null(self.ctx);
     }
 
-    pub fn reply_null_with_ok(&self, msg: &str) -> Result<(), RModError>{
-        self.log(LogLevel::Warning, msg);
-        Ok(self.reply_null())
-    }
- 
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -323,6 +330,78 @@ impl RedisKeyWritable {
             raw::Status::Err => Err(error!("Error while eracing key"))
         }
     }
+
+    pub fn rpush(&self, ele: &str) -> Result<(), RModError> {
+        let ele_str = RedisString::create(self.ctx, ele);
+        let place: c_int = -1;
+        match raw::list_push(self.key_inner,place,ele_str.str_inner) {
+            raw::Status::Ok => Ok(()),
+            raw::Status::Err => Err(error!("Error while rpush to key, tried to the wrong type"))
+        }
+    }
+
+    pub fn lpush(&self, ele: &str) -> Result<(), RModError> {
+        let ele_str = RedisString::create(self.ctx, ele);
+        let place: c_int = 0;
+        match raw::list_push(self.key_inner,place,ele_str.str_inner) {
+            raw::Status::Ok => Ok(()),
+            raw::Status::Err => Err(error!("Error while lpush to key, tried to the wrong type"))
+        }
+    }
+
+    pub fn rpop(&self) -> Result<Option<String>, RModError> {
+        match raw::key_type(self.key_inner) {
+            raw::KeyType::Empty => return Ok(None),
+            raw::KeyType::List  => (),
+            _ => return Err(error!("Error while lpop to key, not List structure")),
+        }
+        let place: c_int = -1;
+        let redis_str = raw::list_pop(self.key_inner,place);
+        match manifest_redis_string(redis_str){
+            Ok(re_str) => Ok(Some(re_str)),
+            Err(_) => Err(error!("Error while rpop to key, tried to the wrong type"))
+        }
+    }
+
+    pub fn lpop(&self) -> Result<Option<String>, RModError> {
+        match raw::key_type(self.key_inner) {
+            raw::KeyType::Empty => return Ok(None),
+            raw::KeyType::List  => (),
+            _ => return Err(error!("Error while lpop to key, not List structure")),
+        }
+
+        let place: c_int = 0;
+        let redis_str = raw::list_pop(self.key_inner,place);
+        match manifest_redis_string(redis_str){
+            Ok(re_str) => Ok(Some(re_str)),
+            Err(_) => Err(error!("Error while lpop to key, tried to the wrong type"))
+        }
+    }
+
+
+    pub fn rm_hget(&self, field: &str) -> Option<String> {
+        let fld_str = RedisString::create(self.ctx, field);
+        let val_str = raw::rm_hash_get(self.key_inner, fld_str.str_inner);
+        match manifest_redis_string(val_str){
+            Ok(re_str) => Some(re_str),
+            Err(_) => None
+        }
+    }
+
+    pub fn rm_hset(&self, field: &str, val: &str) -> Result<(), RModError> {
+        let fld_str = RedisString::create(self.ctx, field);
+        let val_str = RedisString::create(self.ctx, val);
+        match raw::rm_hash_set(
+            self.key_inner,
+            fld_str.str_inner,
+            val_str.str_inner
+        ){
+            raw::Status::Ok => Ok(()),
+            raw::Status::Err => Err(error!(
+                "Error while hset key value, sth of err occured inside redismodule api"
+            ))
+        }
+    }
 }
 
 impl Drop for RedisKeyWritable {
@@ -350,7 +429,6 @@ impl RedisString {
         let str_inner = raw::create_string(ctx, format!("{}\0", s).as_ptr(), s.len());
         RedisString { ctx, str_inner }
     }
-
 }
 
 impl Drop for RedisString {
@@ -366,6 +444,8 @@ fn handle_status(status: raw::Status, message: &str) -> Result<(), RModError> {
         raw::Status::Err => Err(error!(message)),
     }
 }
+
+
 
 fn manifest_redis_string(
     redis_str: *mut raw::RedisModuleString,
