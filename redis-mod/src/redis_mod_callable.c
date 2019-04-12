@@ -1,12 +1,12 @@
 #include <string.h>
 #include "redismodule.h"
 
-//Here is to handle method of RedisModule_Call for unsupported variable argument on Rust function.
+//Here is to handle method of RedisModule_Call, RedisModule_HashSet.. for unsupported variable argument on Rust function.
 //
 //Notice:
 //    Method which is similar to this is already prepared, but segmentation fault occur at C ffi
-//    while calling RedisModule_Call function extern on Rust side.
-//    This reason probably is when parsing variable arguments transferd by Rust inside RedisModule_Call
+//    while calling RedisModule_Call, RedisModule_HashSet... function extern on Rust side.
+//    This reason probably is when parsing variable arguments transferd by Rust inside RedisModule_Call, RedisModule_HashSet...
 //    and then something error with unexpecetd incoming.
 
 //RedisModuleCallReply *RedisModule_Callable1(RedisModuleCtx *ctx, const char *cmdname, const char *key, const char *arg0) {
