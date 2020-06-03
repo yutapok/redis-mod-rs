@@ -205,6 +205,10 @@ pub fn log(ctx: *mut RedisModuleCtx, level: *const u8, fmt: *const u8) {
     unsafe { RedisModule_Log(ctx, level, fmt) }
 }
 
+pub fn replicate_verbatim(ctx: *mut RedisModuleCtx) {
+    unsafe { RedisModule_ReplicateVerbatim(ctx) }
+}
+
 pub fn create_string(
     ctx: *mut RedisModuleCtx,
     ptr: *const u8,
@@ -403,6 +407,8 @@ extern "C" {
     static RedisModule_ListPop:
         extern "C" fn(key: *mut RedisModuleKey, place: c_int) -> *mut RedisModuleString;
 
+    static RedisModule_ReplicateVerbatim:
+        extern "C" fn(ctx: *mut RedisModuleCtx);
 
 }
 

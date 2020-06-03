@@ -64,11 +64,11 @@ pub trait Command {
     fn str_flags(&self) -> &'static str;  
 }
 
-impl Command {
+impl dyn Command {
     /// Provides a basic wrapper for a command's implementation that parses
     /// arguments to Rust data types and handles the OK/ERR reply back to Redis.    
     pub fn harness(
-        command: &Command,
+        command: &dyn Command,
         ctx: *mut raw::RedisModuleCtx,
         argv: *mut *mut raw::RedisModuleString,
         argc: c_int,
@@ -198,6 +198,10 @@ impl Redis {
 
     pub fn reply_null(&self) {
         raw::reply_with_null(self.ctx);
+    }
+
+    pub fn replicate_verbatim(&self) {
+        raw::replicate_verbatim(self.ctx);
     }
 
 }
