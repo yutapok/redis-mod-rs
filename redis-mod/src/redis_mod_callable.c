@@ -17,6 +17,18 @@ static RedisModuleCallReply *RedisModule_Callable2(RedisModuleCtx *ctx, const ch
     return RedisModule_Call(ctx, cmdname, "cc", key, arg0);
 }
 
+RedisModuleCallReply *RedisModule_Call1(RedisModuleCtx *ctx, const char *cmdname, const char *key) {
+    return RedisModule_Call(ctx, cmdname, "c", key);
+}
+
+RedisModuleCallReply *RedisModule_Call2(RedisModuleCtx *ctx, const char *cmdname, const char *key, const char *arg0) {
+    return RedisModule_Call(ctx, cmdname, "cc", key, arg0);
+}
+
+RedisModuleCallReply *RedisModule_Call3(RedisModuleCtx *ctx, const char *cmdname, const char *key, const char *arg0, const char *arg1) {
+    return RedisModule_Call(ctx, cmdname, "ccc", key, arg0, arg1);
+}
+
 RedisModuleCallReply *RedisModule_CallKeys(RedisModuleCtx *ctx, const char *arg0){
     return RedisModule_Call(ctx, "keys", "c", arg0);
 }

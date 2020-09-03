@@ -254,6 +254,33 @@ pub fn callable2_reply_int(
     unsafe{ RedisModuleCallable2_ReplyInteger(ctx, cmdname, key, arg0) }
 }
 
+pub fn call1_reply(
+    ctx: *mut RedisModuleCtx,
+    cmdname: *const i8,
+    key: *const i8
+) -> *mut RedisModuleCallReply {
+    unsafe{ RedisModule_Call1(ctx, cmdname, key) }
+}
+
+pub fn call2_reply(
+    ctx: *mut RedisModuleCtx,
+    cmdname: *const i8,
+    key: *const i8,
+    arg0: *const i8,
+) -> *mut RedisModuleCallReply {
+    unsafe{ RedisModule_Call2(ctx, cmdname, key, arg0) }
+}
+
+pub fn call3_reply(
+    ctx: *mut RedisModuleCtx,
+    cmdname: *const i8,
+    key: *const i8,
+    arg0: *const i8,
+    arg1: *const i8,
+) -> *mut RedisModuleCallReply {
+    unsafe{ RedisModule_Call3(ctx, cmdname, key, arg0, arg1) }
+}
+
 pub fn call_keys(
     ctx: *mut RedisModuleCtx,
     arg0: *const i8
@@ -286,6 +313,27 @@ extern "C" {
         key: *const i8,
         arg0: *const i8,
     ) -> c_longlong;
+
+    pub fn RedisModule_Call1(
+        ctx: *mut RedisModuleCtx,
+        cmdname: *const i8,
+        key: *const i8
+    ) -> *mut RedisModuleCallReply;
+
+    pub fn RedisModule_Call2(
+        ctx: *mut RedisModuleCtx,
+        cmdname: *const i8,
+        key: *const i8,
+        arg0: *const i8
+    ) -> *mut RedisModuleCallReply;
+
+    pub fn RedisModule_Call3(
+        ctx: *mut RedisModuleCtx,
+        cmdname: *const i8,
+        key: *const i8,
+        arg0: *const i8,
+        arg1: *const i8
+    ) -> *mut RedisModuleCallReply;
 
     pub fn RedisModule_CallKeys(
         ctx: *mut RedisModuleCtx,

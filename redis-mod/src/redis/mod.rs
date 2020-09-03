@@ -102,14 +102,63 @@ impl Redis {
             raw::callable2_reply_int(self.ctx, cmdname.as_ptr(), key.as_ptr(), arg0.as_ptr())
         }
 
+        pub fn call1_reply_integer(&self, cmdname: &str, arg0 : &str) -> Result<i64, RModError> {
+            let cmdname = CString::new(cmdname).expect("CString::new(cmdname) failed");
+            let arg = CString::new(arg0).expect("CString::new(arg) failed");
+            let reply = RedisCallReply::create(raw::call1_reply(self.ctx, cmdname.as_ptr(),arg.as_ptr()));
+            reply.to_integer()
+        }
+
+        pub fn call2_reply_integer(&self, cmdname: &str, arg0 : &str, arg1 : &str) -> Result<i64, RModError> {
+            let cmdname = CString::new(cmdname).expect("CString::new(cmdname) failed");
+            let arg0 = CString::new(arg0).expect("CString::new(arg) failed");
+            let arg1 = CString::new(arg1).expect("CString::new(arg) failed");
+            let reply = RedisCallReply::create(raw::call2_reply(self.ctx, cmdname.as_ptr(),arg0.as_ptr(), arg1.as_ptr()));
+            reply.to_integer()
+        }
+
+        pub fn call3_reply_integer(&self, cmdname: &str, arg0 : &str, arg1 : &str, arg2 : &str) -> Result<i64, RModError> {
+            let cmdname = CString::new(cmdname).expect("CString::new(cmdname) failed");
+            let arg0 = CString::new(arg0).expect("CString::new(arg) failed");
+            let arg1 = CString::new(arg1).expect("CString::new(arg) failed");
+            let arg2 = CString::new(arg2).expect("CString::new(arg) failed");
+            let reply = RedisCallReply::create(raw::call3_reply(self.ctx, cmdname.as_ptr(),arg0.as_ptr(), arg1.as_ptr(), arg2.as_ptr()));
+            reply.to_integer()
+        }
+
+        pub fn call1_reply_string(&self, cmdname: &str, arg0 : &str) -> Result<String, RModError> {
+            let cmdname = CString::new(cmdname).expect("CString::new(cmdname) failed");
+            let arg = CString::new(arg0).expect("CString::new(arg) failed");
+            let reply = RedisCallReply::create(raw::call1_reply(self.ctx, cmdname.as_ptr(),arg.as_ptr()));
+            reply.to_string()
+        }
+
+        pub fn call2_reply_string(&self, cmdname: &str, arg0 : &str, arg1 : &str) -> Result<String, RModError> {
+            let cmdname = CString::new(cmdname).expect("CString::new(cmdname) failed");
+            let arg0 = CString::new(arg0).expect("CString::new(arg) failed");
+            let arg1 = CString::new(arg1).expect("CString::new(arg) failed");
+            let reply = RedisCallReply::create(raw::call2_reply(self.ctx, cmdname.as_ptr(), arg0.as_ptr(), arg1.as_ptr()));
+            reply.to_string()
+        }
+
+        pub fn call3_reply_string(&self, cmdname: &str, arg0 : &str, arg1 : &str, arg2 : &str) -> Result<String, RModError> {
+            let cmdname = CString::new(cmdname).expect("CString::new(cmdname) failed");
+            let arg0 = CString::new(arg0).expect("CString::new(arg) failed");
+            let arg1 = CString::new(arg1).expect("CString::new(arg) failed");
+            let arg2 = CString::new(arg2).expect("CString::new(arg) failed");
+            let reply = RedisCallReply::create(raw::call3_reply(self.ctx, cmdname.as_ptr(),arg0.as_ptr(), arg1.as_ptr(), arg2.as_ptr()));
+            reply.to_string()
+        }
+
+
         pub fn call_keys(&self, arg: &str) -> Result<Vec<String>, RModError> {
             let arg = CString::new(arg).expect("CString::new(arg) failed");
-            let reply = RedisCallReply::create(raw::call_keys(self.ctx, arg.as_ptr()));
+            let reply = RedisCallReply::create(raw::call1_reply(self.ctx, "keys".as_ptr() as *const i8, arg.as_ptr()));
             let size = reply.check_length() as u64;
             let mut vec_keys: Vec<String> = Vec::with_capacity(size as usize);
             for idx in 0..size {
                 let ele_str = match reply.reply_array_element(idx as usize){
-                    Ok(reply2) => reply2.reply_string(),
+                    Ok(reply2) => reply2.to_string(),
                     Err(_) => return Err(error!("Failed to take element from reply array"))
                 };
                 match ele_str {
@@ -474,15 +523,14 @@ impl RedisCallReply {
         raw::call_reply_type(self.reply)
     }
 
-    //MEMO: for warning
-    //fn reply_integer(&self) -> Result<i64, RModError> {
-    //    if self.check_type() != raw::ReplyType::Integer {
-    //        return Err(error!("Invalid type of CallReply, not Integer"))
-    //    }
-    //    Ok(raw::call_reply_integer(self.reply) as i64)
-    //}
+    fn to_integer(&self) -> Result<i64, RModError> {
+        if self.check_type() != raw::ReplyType::Integer {
+            return Err(error!("Invalid type of CallReply, not Integer"))
+        }
+        Ok(raw::call_reply_integer(self.reply) as i64)
+    }
 
-    fn reply_string(&self) -> Result<String, RModError> {
+    fn to_string(&self) -> Result<String, RModError> {
         if self.check_type() != raw::ReplyType::String {
             return Err(error!("Invalid type of CallReply, not String"))
         }
