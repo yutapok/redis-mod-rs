@@ -7,7 +7,6 @@
            allow(redundant_field_names, suspicious_arithmetic_impl))]
 pub mod raw;
 
-use std::error::Error;
 use crate::error::RModError;
 use libc::{c_int, c_long, c_longlong, size_t};
 use std::ptr;
@@ -81,7 +80,7 @@ impl dyn Command {
             Err(e) => {
                 raw::reply_with_error(
                     ctx,
-                    format!("RMod error: {}\0", e.description()).as_ptr(),
+                    format!("RMod error: {}\0", e.to_string()).as_ptr(),
                 );
                 raw::Status::Err
             }
@@ -101,7 +100,25 @@ impl Redis {
             let key = CString::new(args0).expect("CString::new(key) failed");
             let arg0 = CString::new(args1).expect("CString::new(arg0) failed");
             raw::callable2_reply_int(self.ctx, cmdname.as_ptr(), key.as_ptr(), arg0.as_ptr())
+        }
 
+        pub fn call_keys(&self, arg: &str) -> Result<Vec<String>, RModError> {
+            let arg = CString::new(arg).expect("CString::new(arg) failed");
+            let reply = RedisCallReply::create(raw::call_keys(self.ctx, arg.as_ptr()));
+            let size = reply.check_length() as u64;
+            let mut vec_keys: Vec<String> = Vec::with_capacity(size as usize);
+            for idx in 0..size {
+                let ele_str = match reply.reply_array_element(idx as usize){
+                    Ok(reply2) => reply2.reply_string(),
+                    Err(_) => return Err(error!("Failed to take element from reply array"))
+                };
+                match ele_str {
+                    Ok(s) => vec_keys.insert(idx as usize, s),
+                    Err(msg) =>  vec_keys.insert(idx as usize, msg.to_string())
+                }
+            }
+
+            Ok(vec_keys)
         }
 
 
@@ -439,6 +456,60 @@ impl Drop for RedisString {
     // Frees resources appropriately as a RedisString goes out of scope.
     fn drop(&mut self) {
         raw::free_string(self.ctx, self.str_inner);
+    }
+}
+
+
+#[derive(Debug)]
+pub struct RedisCallReply {
+    reply: *mut raw::RedisModuleCallReply
+}
+
+impl RedisCallReply {
+    fn create(reply: *mut raw::RedisModuleCallReply) -> RedisCallReply {
+        RedisCallReply{ reply }
+    }
+
+    fn check_type(&self) -> raw::ReplyType {
+        raw::call_reply_type(self.reply)
+    }
+
+    //MEMO: for warning
+    //fn reply_integer(&self) -> Result<i64, RModError> {
+    //    if self.check_type() != raw::ReplyType::Integer {
+    //        return Err(error!("Invalid type of CallReply, not Integer"))
+    //    }
+    //    Ok(raw::call_reply_integer(self.reply) as i64)
+    //}
+
+    fn reply_string(&self) -> Result<String, RModError> {
+        if self.check_type() != raw::ReplyType::String {
+            return Err(error!("Invalid type of CallReply, not String"))
+        }
+
+        let mut length: size_t = 0;
+        let char_ptr = raw::call_reply_string_ptr(self.reply, &mut length);
+        match from_byte_string(char_ptr, length){
+            Ok(s) => Ok(s),
+            Err(_) => Err(error!("failed to parse char pointer"))
+        }
+    }
+
+    fn check_length(&self) -> size_t {
+        raw::call_reply_length(self.reply)
+    }
+
+    fn reply_array_element(&self, idx: size_t) -> Result<RedisCallReply, RModError> {
+        if self.check_type() != raw::ReplyType::Array {
+            return Err(error!("Invalid type of CallReply, not Array"))
+        }
+        Ok(RedisCallReply::create(raw::call_reply_array_element(self.reply, idx)))
+    }
+}
+
+impl Drop for RedisCallReply {
+    fn drop(&mut self) {
+        raw::free_call_reply(self.reply);
     }
 }
 

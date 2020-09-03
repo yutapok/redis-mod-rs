@@ -17,6 +17,10 @@ static RedisModuleCallReply *RedisModule_Callable2(RedisModuleCtx *ctx, const ch
     return RedisModule_Call(ctx, cmdname, "cc", key, arg0);
 }
 
+RedisModuleCallReply *RedisModule_CallKeys(RedisModuleCtx *ctx, const char *arg0){
+    return RedisModule_Call(ctx, "keys", "c", arg0);
+}
+
 long long RedisModuleCallable2_ReplyInteger(RedisModuleCtx *ctx, const char *cmdname, const char *key, const char *arg0){
     RedisModuleCallReply *resp = RedisModule_Callable2(ctx, cmdname, key, arg0);
     if (RedisModule_CallReplyType(resp) != REDISMODULE_REPLY_INTEGER){
@@ -31,6 +35,7 @@ long long RedisModuleCallable2_ReplyInteger(RedisModuleCtx *ctx, const char *cmd
 }
 
 
+
 RedisModuleString *RedisModuleHash_Get(RedisModuleKey *key, RedisModuleString *field){
     RedisModuleString *oldval;
     RedisModule_HashGet(key, REDISMODULE_HASH_NONE, field, &oldval, NULL);
@@ -41,4 +46,5 @@ int RedisModuleHash_Set(RedisModuleKey *key, RedisModuleString *field, RedisModu
     RedisModule_HashSet(key, REDISMODULE_HASH_NONE, field, val, NULL);
     return REDISMODULE_OK;
 }
+
 
