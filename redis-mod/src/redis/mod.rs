@@ -153,7 +153,8 @@ impl Redis {
 
         pub fn call_keys(&self, arg: &str) -> Result<Vec<String>, RModError> {
             let arg = CString::new(arg).expect("CString::new(arg) failed");
-            let reply = RedisCallReply::create(raw::call1_reply(self.ctx, "keys".as_ptr() as *const i8, arg.as_ptr()));
+            let cmd = CString::new("keys").expect("CString::new(keys) failed");
+            let reply = RedisCallReply::create(raw::call1_reply(self.ctx, cmd.as_ptr(), arg.as_ptr()));
             let size = reply.check_length() as u64;
             let mut vec_keys: Vec<String> = Vec::with_capacity(size as usize);
             for idx in 0..size {
