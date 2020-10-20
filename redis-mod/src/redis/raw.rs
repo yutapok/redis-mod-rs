@@ -98,6 +98,18 @@ pub fn call_reply_string_ptr(
     unsafe { RedisModule_CallReplyStringPtr(str, len) }
 }
 
+pub fn call_reply_length(
+    reply: *mut RedisModuleCallReply
+) -> size_t {
+    unsafe { RedisModule_CallReplyLength(reply) }
+}
+
+pub fn call_reply_array_element(
+    reply: *mut RedisModuleCallReply,
+    idx: size_t
+)  -> *mut RedisModuleCallReply {
+    unsafe { RedisModule_CallReplyArrayElement(reply, idx) }
+}
 
 
 pub fn create_command(
@@ -242,6 +254,40 @@ pub fn callable2_reply_int(
     unsafe{ RedisModuleCallable2_ReplyInteger(ctx, cmdname, key, arg0) }
 }
 
+pub fn call1_reply(
+    ctx: *mut RedisModuleCtx,
+    cmdname: *const i8,
+    key: *const i8
+) -> *mut RedisModuleCallReply {
+    unsafe{ RedisModule_Call1(ctx, cmdname, key) }
+}
+
+pub fn call2_reply(
+    ctx: *mut RedisModuleCtx,
+    cmdname: *const i8,
+    key: *const i8,
+    arg0: *const i8,
+) -> *mut RedisModuleCallReply {
+    unsafe{ RedisModule_Call2(ctx, cmdname, key, arg0) }
+}
+
+pub fn call3_reply(
+    ctx: *mut RedisModuleCtx,
+    cmdname: *const i8,
+    key: *const i8,
+    arg0: *const i8,
+    arg1: *const i8,
+) -> *mut RedisModuleCallReply {
+    unsafe{ RedisModule_Call3(ctx, cmdname, key, arg0, arg1) }
+}
+
+pub fn call_keys(
+    ctx: *mut RedisModuleCtx,
+    arg0: *const i8
+) -> *mut RedisModuleCallReply {
+    unsafe{ RedisModule_CallKeys(ctx, arg0) }
+}
+
 pub fn rm_hash_get(
     key: *mut RedisModuleKey,
     field: *mut RedisModuleString
@@ -267,6 +313,32 @@ extern "C" {
         key: *const i8,
         arg0: *const i8,
     ) -> c_longlong;
+
+    pub fn RedisModule_Call1(
+        ctx: *mut RedisModuleCtx,
+        cmdname: *const i8,
+        key: *const i8
+    ) -> *mut RedisModuleCallReply;
+
+    pub fn RedisModule_Call2(
+        ctx: *mut RedisModuleCtx,
+        cmdname: *const i8,
+        key: *const i8,
+        arg0: *const i8
+    ) -> *mut RedisModuleCallReply;
+
+    pub fn RedisModule_Call3(
+        ctx: *mut RedisModuleCtx,
+        cmdname: *const i8,
+        key: *const i8,
+        arg0: *const i8,
+        arg1: *const i8
+    ) -> *mut RedisModuleCallReply;
+
+    pub fn RedisModule_CallKeys(
+        ctx: *mut RedisModuleCtx,
+        arg0: *const i8
+    ) -> *mut RedisModuleCallReply;
 
     pub fn RedisModuleHash_Get(
         key: *mut RedisModuleKey,
@@ -309,6 +381,12 @@ extern "C" {
 
     static RedisModule_CallReplyStringPtr:
         extern "C" fn(str: *mut RedisModuleCallReply, len: *mut size_t) -> *const u8;
+
+    static RedisModule_CallReplyLength:
+        extern "C" fn(reply: *mut RedisModuleCallReply) -> size_t;
+
+    static RedisModule_CallReplyArrayElement:
+        extern "C" fn(reply: *mut RedisModuleCallReply, idx: size_t) -> *mut RedisModuleCallReply;
 
     static RedisModule_CreateCommand:
         extern "C" fn(
