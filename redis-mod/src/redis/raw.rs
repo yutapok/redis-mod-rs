@@ -304,13 +304,12 @@ pub fn rm_hash_set(
     unsafe { RedisModuleHash_Set(key, field, val) }
 }
 
-
 pub fn rm_alloc(size: size_t) -> *mut u8 {
-    unsafe { RedisModule_Alloc(size) }
+    unsafe { RedisModule_Alloc(size) as *mut u8 }
 }
 
-pub fn rm_free(ptr: *mut u8) -> *mut c_void {
-    unsafe { RedisModule_Free(ptr) }
+pub fn rm_free(ptr: *mut u8) {
+    unsafe { RedisModule_Free(ptr as *mut c_void) }
 }
 
 //extern function of C
@@ -499,10 +498,10 @@ extern "C" {
         extern "C" fn(ctx: *mut RedisModuleCtx);
 
     static RedisModule_Alloc:
-        extern "C" fn(size: size_t) -> *mut u8;
+        extern "C" fn(size: size_t) -> *mut c_void;
 
     static RedisModule_Free:
-        extern "C" fn(ptr: *mut u8) -> *mut c_void;
+        extern "C" fn(ptr: *mut c_void);
 
 }
 
