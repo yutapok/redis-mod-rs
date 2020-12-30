@@ -13,7 +13,8 @@ use std::ptr;
 use std::string;
 use time;
 use std::ffi::CString;
-use std::alloc::{GlobalAlloc, Layout};
+use std::alloc::{GlobalAlloc, Layout, System};
+use std::sync::atomic::{AtomicBool, Ordering::SeqCst};
 
 
 
@@ -565,18 +566,31 @@ impl Drop for RedisCallReply {
     }
 }
 
-
+static USE_REDIS_ALLOC: AtomicBool = AtomicBool::new(false);
 pub struct RedisAlloc;
 unsafe impl GlobalAlloc for RedisAlloc {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        let size = (layout.size() + layout.align() - 1) & (!(layout.align() - 1));
-        raw::rm_alloc(size)
+        let use_redis = USE_REDIS_ALLOC.load(SeqCst);
+        if use_redis {
+            return raw::rm_alloc(size)
+        }
+        System.alloc(layout)
     }
 
-    unsafe fn dealloc(&self, ptr: *mut u8, _layout: Layout) {
-        raw::rm_free(ptr);
+    unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
+        let use_redis = USE_REDIS_ALLOC.load(SeqCst);
+        if use_redis {
+            return raw::rm_free(ptr);
+        }
+        System.dealloc(ptr, layout);
     }
 }
+
+pub fn use_redis_alloc() {
+    USE_REDIS_ALLOC.store(true, SeqCst);
+    eprintln!("Now using Redis allocator");
+}
+
 
 fn handle_status(status: raw::Status, message: &str) -> Result<(), RModError> {
     match status {

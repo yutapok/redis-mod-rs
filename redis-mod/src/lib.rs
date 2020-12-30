@@ -12,5 +12,5 @@ pub mod error;
 pub use crate::error::RModError;
 
 
-//#[global_allocator]
-//static ALLOC: RedisAlloc = RedisAlloc;
+#[global_allocator]
+static ALLOC: RedisAlloc = RedisAlloc;
