@@ -572,7 +572,6 @@ unsafe impl GlobalAlloc for RedisAlloc {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         let use_redis = USE_REDIS_ALLOC.load(SeqCst);
         if use_redis {
-            eprintln!("Now using Redis allocator");
             return raw::rm_alloc(layout.size())
         }
         System.alloc(layout)
@@ -581,7 +580,6 @@ unsafe impl GlobalAlloc for RedisAlloc {
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
         let use_redis = USE_REDIS_ALLOC.load(SeqCst);
         if use_redis {
-            eprintln!("Now using Redis allocator");
             return raw::rm_free(ptr);
         }
         System.dealloc(ptr, layout);
@@ -590,7 +588,11 @@ unsafe impl GlobalAlloc for RedisAlloc {
 
 pub fn use_redis_alloc() {
     USE_REDIS_ALLOC.store(true, SeqCst);
-    //eprintln!("Now using Redis allocator");
+    eprintln!("Now using Redis allocator");
+}
+
+pub fn is_redis_alloc() -> bool {
+    USE_REDIS_ALLOC.load(SeqCst)
 }
 
 
