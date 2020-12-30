@@ -305,7 +305,7 @@ pub fn rm_hash_set(
 }
 
 pub fn rm_alloc(size: size_t) -> *mut u8 {
-    unsafe { RedisModule_Alloc(size) as *mut u8 }
+    unsafe { RedisModuleAlloc_Ptr(size) }
 }
 
 pub fn rm_free(ptr: *mut u8) {
@@ -359,6 +359,9 @@ extern "C" {
         field: *mut RedisModuleString,
         val: *mut RedisModuleString
     ) -> Status;
+
+    pub fn RedisModuleAlloc_Ptr(bytes: size_t) -> *mut u8;
+
 }
 
 
