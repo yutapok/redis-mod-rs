@@ -13,6 +13,9 @@ use std::ptr;
 use std::string;
 use time;
 use std::ffi::CString;
+use std::alloc::{GlobalAlloc, Layout};
+
+
 
 /// `LogLevel` is a level of logging to be specified with a Redis log directive.
 #[derive(Clone, Copy, Debug)]
@@ -559,6 +562,19 @@ impl RedisCallReply {
 impl Drop for RedisCallReply {
     fn drop(&mut self) {
         raw::free_call_reply(self.reply);
+    }
+}
+
+
+pub struct RedisAlloc;
+unsafe impl GlobalAlloc for RedisAlloc {
+    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
+        let size = (layout.size() + layout.align() - 1) & (!(layout.align() - 1));
+        raw::rm_alloc(size)
+    }
+
+    unsafe fn dealloc(&self, ptr: *mut u8, _layout: Layout) {
+        raw::rm_free(ptr);
     }
 }
 

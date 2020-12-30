@@ -7,6 +7,10 @@ extern crate time;
 pub mod macros;
 
 pub mod redis;
-pub use crate::redis::{raw, Command};
+pub use crate::redis::{raw, Command, RedisAlloc};
 pub mod error;
 pub use crate::error::RModError;
+
+
+#[global_allocator]
+static ALLOC: RedisAlloc = RedisAlloc;
