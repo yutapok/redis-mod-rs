@@ -59,7 +59,4 @@ int RedisModuleHash_Set(RedisModuleKey *key, RedisModuleString *field, RedisModu
     return REDISMODULE_OK;
 }
 
-char *RedisModuleAlloc_Ptr(size_t bytes){
-    return (char *)RedisModule_Alloc(bytes);
-}
 
