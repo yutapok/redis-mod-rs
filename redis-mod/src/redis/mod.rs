@@ -566,34 +566,40 @@ impl Drop for RedisCallReply {
     }
 }
 
-static USE_REDIS_ALLOC: AtomicBool = AtomicBool::new(false);
-pub struct RedisAlloc;
+pub struct RedisAlloc {
+    pub use_redis_ab: AtomicBool
+}
+
+impl RedisAlloc {
+    pub fn enable(&self) {
+        self.use_redis_ab.store(true, SeqCst);
+        eprintln!("Now using Redis allocator");
+    }
+
+    fn is_redis_alloc(&self) -> bool {
+        self.use_redis_ab.load(SeqCst)
+    }
+}
+
 unsafe impl GlobalAlloc for RedisAlloc {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        let use_redis = USE_REDIS_ALLOC.load(SeqCst);
-        if use_redis {
+        if self.is_redis_alloc() {
             return raw::rm_alloc(layout.size())
         }
+
         System.alloc(layout)
     }
 
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
-        let use_redis = USE_REDIS_ALLOC.load(SeqCst);
-        if use_redis {
+        if self.is_redis_alloc() {
             return raw::rm_free(ptr);
         }
+
         System.dealloc(ptr, layout);
     }
 }
 
-pub fn use_redis_alloc() {
-    USE_REDIS_ALLOC.store(true, SeqCst);
-    eprintln!("Now using Redis allocator");
-}
 
-pub fn is_redis_alloc() -> bool {
-    USE_REDIS_ALLOC.load(SeqCst)
-}
 
 
 fn handle_status(status: raw::Status, message: &str) -> Result<(), RModError> {
