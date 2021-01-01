@@ -16,11 +16,10 @@ use std::ffi::CString;
 use std::alloc::{GlobalAlloc, Layout, System};
 use std::sync::atomic::{AtomicBool, Ordering::SeqCst};
 
+static AB: AtomicBool = AtomicBool::new(false);
 
 #[global_allocator]
-static RA: RedisAlloc = RedisAlloc {
-    use_redis_ab: AtomicBool::new(false)
-};
+static RA: RedisAlloc = RedisAlloc;
 
 
 /// `LogLevel` is a level of logging to be specified with a Redis log directive.
@@ -571,24 +570,10 @@ impl Drop for RedisCallReply {
     }
 }
 
-pub struct RedisAlloc {
-    pub use_redis_ab: AtomicBool
-}
-
-impl RedisAlloc {
-    pub fn enable(&self) {
-        self.use_redis_ab.store(true, SeqCst);
-        eprintln!("Now using Redis allocator");
-    }
-
-    fn is_redis_alloc(&self) -> bool {
-        self.use_redis_ab.load(SeqCst)
-    }
-}
-
+pub struct RedisAlloc;
 unsafe impl GlobalAlloc for RedisAlloc {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        if self.is_redis_alloc() {
+        if AB.load(SeqCst) {
             return raw::rm_alloc(layout.size())
         }
 
@@ -596,12 +581,17 @@ unsafe impl GlobalAlloc for RedisAlloc {
     }
 
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
-        if self.is_redis_alloc() {
+        if AB.load(SeqCst) {
             return raw::rm_free(ptr);
         }
 
         System.dealloc(ptr, layout);
     }
+}
+
+fn enable_redis_allocator(){
+    AB.store(true, SeqCst);
+    eprintln!("Now using Redis allocator");
 }
 
 pub fn init(
@@ -611,7 +601,7 @@ pub fn init(
     api_version: c_int,
 ) -> raw::Status {
     let status = raw::init(ctx, modulename, module_version, api_version);
-    RA.enable();
+    enable_redis_allocator();
     status
 }
 
