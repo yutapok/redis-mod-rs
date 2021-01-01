@@ -571,6 +571,13 @@ impl Drop for RedisCallReply {
 }
 
 pub struct RedisAlloc;
+impl RedisAlloc {
+    pub fn enable(&self){
+        AB.store(true, SeqCst);
+        eprintln!("Now using Redis allocator");
+    }
+}
+
 unsafe impl GlobalAlloc for RedisAlloc {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         if AB.load(SeqCst) {
@@ -587,22 +594,6 @@ unsafe impl GlobalAlloc for RedisAlloc {
 
         System.dealloc(ptr, layout);
     }
-}
-
-fn enable_redis_allocator(){
-    AB.store(true, SeqCst);
-    eprintln!("Now using Redis allocator");
-}
-
-pub fn init(
-    ctx: *mut raw::RedisModuleCtx,
-    modulename: *const u8,
-    module_version: c_int,
-    api_version: c_int,
-) -> raw::Status {
-    let status = raw::init(ctx, modulename, module_version, api_version);
-    enable_redis_allocator();
-    status
 }
 
 
