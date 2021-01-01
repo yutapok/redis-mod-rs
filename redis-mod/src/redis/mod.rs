@@ -17,6 +17,11 @@ use std::alloc::{GlobalAlloc, Layout, System};
 use std::sync::atomic::{AtomicBool, Ordering::SeqCst};
 
 
+#[global_allocator]
+static RA: RedisAlloc = RedisAlloc {
+    use_redis_ab: AtomicBool::new(false)
+};
+
 
 /// `LogLevel` is a level of logging to be specified with a Redis log directive.
 #[derive(Clone, Copy, Debug)]
@@ -599,7 +604,16 @@ unsafe impl GlobalAlloc for RedisAlloc {
     }
 }
 
-
+pub fn init(
+    ctx: *mut raw::RedisModuleCtx,
+    modulename: *const u8,
+    module_version: c_int,
+    api_version: c_int,
+) -> raw::Status {
+    let status = raw::init(ctx, modulename, module_version, api_version);
+    RA.enable();
+    status
+}
 
 
 fn handle_status(status: raw::Status, message: &str) -> Result<(), RModError> {
