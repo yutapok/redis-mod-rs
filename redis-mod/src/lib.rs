@@ -37,6 +37,8 @@ impl InitWithRedisAlloc {
             return raw::Status::Err;
         }
 
+        redis::enable_redis_allocator();
+
         return raw::Status::Ok;
 
     }
