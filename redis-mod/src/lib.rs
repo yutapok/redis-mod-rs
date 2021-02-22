@@ -30,7 +30,7 @@ impl RedisModuleInitializer {
       module_version: mod_ver
     }
 
-    pub fn do(&self,
+    pub fn run(&self,
         ctx: *mut raw::RedisModuleCtx,
         argv: *mut *mut raw::RedisModuleString,
         argc: c_int
