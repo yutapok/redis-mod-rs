@@ -16,7 +16,7 @@ use libc::c_int;
 const MODULE_NAME: &str = "rmod";
 const MODULE_VERSION: c_int = 1;
 
-struct InitWithRedisAlloc {
+pub struct InitWithRedisAlloc {
     module_name: &'static str,
     module_version: c_int
 }
