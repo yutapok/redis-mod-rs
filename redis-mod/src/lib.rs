@@ -17,8 +17,8 @@ const MODULE_NAME: &str = "rmod";
 const MODULE_VERSION: c_int = 1;
 
 pub struct InitWithRedisAlloc {
-    module_name: &'static str,
-    module_version: c_int
+    pub module_name: &'static str,
+    pub module_version: c_int
 }
 
 impl InitWithRedisAlloc {
