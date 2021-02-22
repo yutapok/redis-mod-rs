@@ -13,30 +13,28 @@ pub use crate::error::RModError;
 
 use libc::c_int;
 
-const MODULE_NAME: &str = "rmod";
-const MODULE_VERSION: c_int = 1;
-
 pub struct RedisModuleInitializer {
+    ctx: *mut raw::RedisModuleCtx,
     module_name: &'static str,
     module_version: c_int
 }
 
 impl RedisModuleInitializer {
     pub fn new(
+        ctx: *mut raw::RedisModuleCtx,
         mod_name: &'static str,
         mod_ver: c_int
     ) -> Self {
-      module_name: mod_name,
-      module_version: mod_ver
+      RedisModuleInitializer {
+          ctx: ctx,
+          module_name: mod_name,
+          module_version: mod_ver
+      }
     }
 
-    pub fn run(&self,
-        ctx: *mut raw::RedisModuleCtx,
-        argv: *mut *mut raw::RedisModuleString,
-        argc: c_int
-    ) -> raw::Status {
+    pub fn run(&self) -> raw::Status {
         if raw::init(
-            ctx,
+            self.ctx,
             format!("{}\0", self.module_name).as_ptr(),
             self.module_version,
             raw::REDISMODULE_APIVER_1,
