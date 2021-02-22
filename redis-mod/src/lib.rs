@@ -22,7 +22,7 @@ pub struct InitWithRedisAlloc {
 }
 
 impl InitWithRedisAlloc {
-    fn init(&self,
+    pub fn init(&self,
         ctx: *mut raw::RedisModuleCtx,
         argv: *mut *mut raw::RedisModuleString,
         argc: c_int
