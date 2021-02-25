@@ -83,6 +83,7 @@ impl dyn Command {
         let r = Redis { ctx };
         let args = parse_args(argv, argc).unwrap();
         let str_args: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
+        raw::auto_memory(ctx);
         match command.run(r, str_args.as_slice()) {
             Ok(_) => raw::Status::Ok,
             Err(e) => {
