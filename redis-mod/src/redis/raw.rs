@@ -5,6 +5,7 @@
 extern crate libc;
 
 use libc::{c_int, c_long, c_longlong, size_t};
+use std::os::raw::c_void;
 
 // Rust can't link against C macros (#define) so we just redefine them here.
 // There's a ~0 chance that any of these will ever change so it's pretty safe.
@@ -303,6 +304,18 @@ pub fn rm_hash_set(
     unsafe { RedisModuleHash_Set(key, field, val) }
 }
 
+pub fn rm_alloc(size: size_t) -> *mut u8 {
+    unsafe { RedisModule_Alloc(size) as *mut u8 }
+}
+
+pub fn rm_free(ptr: *mut u8) {
+    unsafe { RedisModule_Free(ptr as *mut c_void) }
+}
+
+pub fn auto_memory(ctx: *mut RedisModuleCtx) {
+    unsafe { RedisModule_AutoMemory(ctx) }
+}
+
 //extern function of C
 #[allow(improper_ctypes)]
 #[link(name = "redis_mod_callable", kind = "static")]
@@ -350,6 +363,7 @@ extern "C" {
         field: *mut RedisModuleString,
         val: *mut RedisModuleString
     ) -> Status;
+
 }
 
 
@@ -486,6 +500,15 @@ extern "C" {
         extern "C" fn(key: *mut RedisModuleKey, place: c_int) -> *mut RedisModuleString;
 
     static RedisModule_ReplicateVerbatim:
+        extern "C" fn(ctx: *mut RedisModuleCtx);
+
+    static RedisModule_Alloc:
+        extern "C" fn(size: size_t) -> *mut c_void;
+
+    static RedisModule_Free:
+        extern "C" fn(ptr: *mut c_void);
+
+    static RedisModule_AutoMemory:
         extern "C" fn(ctx: *mut RedisModuleCtx);
 
 }

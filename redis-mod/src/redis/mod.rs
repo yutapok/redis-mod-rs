@@ -13,6 +13,14 @@ use std::ptr;
 use std::string;
 use time;
 use std::ffi::CString;
+use std::alloc::{GlobalAlloc, Layout, System};
+use std::sync::atomic::{AtomicBool, Ordering::SeqCst};
+
+static AB: AtomicBool = AtomicBool::new(false);
+
+#[global_allocator]
+static RA: RedisAlloc = RedisAlloc;
+
 
 /// `LogLevel` is a level of logging to be specified with a Redis log directive.
 #[derive(Clone, Copy, Debug)]
@@ -75,6 +83,7 @@ impl dyn Command {
         let r = Redis { ctx };
         let args = parse_args(argv, argc).unwrap();
         let str_args: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
+        raw::auto_memory(ctx);
         match command.run(r, str_args.as_slice()) {
             Ok(_) => raw::Status::Ok,
             Err(e) => {
@@ -561,6 +570,33 @@ impl Drop for RedisCallReply {
         raw::free_call_reply(self.reply);
     }
 }
+
+
+pub struct RedisAlloc;
+unsafe impl GlobalAlloc for RedisAlloc {
+    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
+        if AB.load(SeqCst) {
+            return raw::rm_alloc(layout.size())
+        }
+
+        System.alloc(layout)
+    }
+
+    unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
+        if AB.load(SeqCst) {
+            return raw::rm_free(ptr);
+        }
+
+        System.dealloc(ptr, layout);
+    }
+}
+
+pub fn enable_redis_allocator(){
+    AB.store(true, SeqCst);
+    eprintln!("Now using Redis allocator");
+}
+
+
 
 fn handle_status(status: raw::Status, message: &str) -> Result<(), RModError> {
     match status {
