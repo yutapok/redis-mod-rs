@@ -312,6 +312,10 @@ pub fn rm_free(ptr: *mut u8) {
     unsafe { RedisModule_Free(ptr as *mut c_void) }
 }
 
+pub fn auto_memory(ctx: *mut RedisModuleCtx) {
+    unsafe { RedisModule_AutoMemory(ctx) }
+}
+
 //extern function of C
 #[allow(improper_ctypes)]
 #[link(name = "redis_mod_callable", kind = "static")]
@@ -503,6 +507,9 @@ extern "C" {
 
     static RedisModule_Free:
         extern "C" fn(ptr: *mut c_void);
+
+    static RedisModule_AutoMemory:
+        extern "C" fn(ctx: *mut RedisModuleCtx);
 
 }
 
